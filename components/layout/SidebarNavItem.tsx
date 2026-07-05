@@ -17,10 +17,17 @@ export function SidebarNavItem({
   icon: Icon,
   badge,
 }: SidebarNavItemProps) {
+
   const pathname = usePathname();
 
-  const isActive = pathname === href;
+const isDashboardRoot = href.split("/").length === 3;
 
+const isActive = isDashboardRoot
+  ? pathname === href ||
+    pathname.startsWith(`${href}/projects/`)
+  : pathname === href ||
+    pathname.startsWith(`${href}/`);
+    
   return (
     <Link
       href={href}
