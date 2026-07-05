@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 export default function PublicProjectNotFoundPage() {
   return (
@@ -13,15 +13,19 @@ export default function PublicProjectNotFoundPage() {
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold">Проєкт не знайдено</h1>
+        <h1 className="text-2xl font-bold">
+          Проєкт не знайдено
+        </h1>
 
         <p className="mt-2 text-[var(--color-text-secondary)]">
           Можливо, посилання більше не активне або проєкт було видалено.
         </p>
 
         <div className="mt-6">
-          <Button asChild>
-            <Link href="/dashboard/head">Повернутися в dashboard</Link>
+          <Button asChild variant="secondary">
+            <Link href="/project/inactive">
+              Перейти до сторінки неактивного посилання
+            </Link>
           </Button>
         </div>
       </Card>
