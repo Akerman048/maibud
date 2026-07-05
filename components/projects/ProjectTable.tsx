@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Project } from "@/data/mockProjects";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ProjectRowActions } from "@/components/projects/ProjectRowActions";
 
 type ProjectTableProps = {
   projects: Project[];
@@ -12,15 +13,15 @@ export function ProjectTable({
   projects,
   baseHref = "/project",
 }: ProjectTableProps) {
-if (projects.length === 0) {
-  return (
-    <EmptyState
-      title="Проєкти не знайдено"
-      description="Спробуйте змінити пошуковий запит або фільтр."
-    />
-  );
-}
-  
+  if (projects.length === 0) {
+    return (
+      <EmptyState
+        title="Проєкти не знайдено"
+        description="Спробуйте змінити пошуковий запит або фільтр."
+      />
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white">
       <table className="w-full border-collapse text-left">
@@ -43,6 +44,9 @@ if (projects.length === 0) {
             </th>
             <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
               Статус
+            </th>
+            <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Дії
             </th>
           </tr>
         </thead>
@@ -84,6 +88,9 @@ if (projects.length === 0) {
 
               <td className="px-5 py-4">
                 <StatusBadge status={project.status} />
+              </td>
+              <td className="px-5 py-4 text-right">
+                <ProjectRowActions projectId={project.id} baseHref={baseHref} />
               </td>
             </tr>
           ))}
