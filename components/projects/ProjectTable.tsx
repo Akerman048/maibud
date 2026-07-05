@@ -1,0 +1,94 @@
+import Link from "next/link";
+import type { Project } from "@/data/mockProjects";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { EmptyState } from "@/components/ui/EmptyState";
+
+type ProjectTableProps = {
+  projects: Project[];
+  baseHref?: string;
+};
+
+export function ProjectTable({
+  projects,
+  baseHref = "/project",
+}: ProjectTableProps) {
+if (projects.length === 0) {
+  return (
+    <EmptyState
+      title="Проєкти не знайдено"
+      description="Спробуйте змінити пошуковий запит або фільтр."
+    />
+  );
+}
+  
+  return (
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white">
+      <table className="w-full border-collapse text-left">
+        <thead className="bg-slate-50">
+          <tr className="border-b border-[var(--color-border)]">
+            <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Проєкт
+            </th>
+            <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Замовник
+            </th>
+            <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Етап
+            </th>
+            <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Експерт
+            </th>
+            <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Дедлайн
+            </th>
+            <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Статус
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {projects.map((project) => (
+            <tr
+              key={project.id}
+              className="border-b border-[var(--color-border)] last:border-b-0 hover:bg-slate-50"
+            >
+              <td className="px-5 py-4">
+                <Link
+                  href={`${baseHref}/${project.id}`}
+                  className="font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-accent)]"
+                >
+                  {project.name}
+                </Link>
+
+                <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                  {project.address}
+                </div>
+              </td>
+
+              <td className="px-5 py-4 text-sm text-[var(--color-text-primary)]">
+                {project.customer}
+              </td>
+
+              <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">
+                {project.stage}
+              </td>
+
+              <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">
+                {project.expert}
+              </td>
+
+              <td className="px-5 py-4 text-sm font-medium text-[var(--color-text-primary)]">
+                {project.deadline}
+              </td>
+
+              <td className="px-5 py-4">
+                <StatusBadge status={project.status} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}

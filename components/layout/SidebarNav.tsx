@@ -1,0 +1,93 @@
+"use client";
+
+import {
+  FiArchive,
+  FiBell,
+  FiBriefcase,
+  FiFileText,
+  FiMessageSquare,
+  FiSettings,
+  FiUsers,
+} from "react-icons/fi";
+
+import type { DashboardRole } from "./Sidebar";
+import { SidebarNavItem } from "./SidebarNavItem";
+
+type SidebarNavProps = {
+  role: DashboardRole;
+};
+
+const navByRole = {
+  head: [
+    { label: "Проєкти", href: "/dashboard/head", icon: FiBriefcase },
+    { label: "Експерти", href: "/dashboard/head/experts", icon: FiUsers },
+    { label: "Архів", href: "/dashboard/head/archive", icon: FiArchive },
+    {
+      label: "Сповіщення",
+      href: "/dashboard/head/notifications",
+      icon: FiBell,
+      badge: 3,
+    },
+    { label: "Налаштування", href: "/dashboard/head/settings", icon: FiSettings },
+  ],
+
+  expert: [
+    { label: "Мої проєкти", href: "/dashboard/expert", icon: FiBriefcase },
+    {
+      label: "Зауваження",
+      href: "/dashboard/expert/comments",
+      icon: FiMessageSquare,
+      badge: 6,
+    },
+    { label: "Документи", href: "/dashboard/expert/documents", icon: FiFileText },
+    { label: "Налаштування", href: "/dashboard/expert/settings", icon: FiSettings },
+  ],
+
+  designer: [
+    { label: "Мої проєкти", href: "/dashboard/designer", icon: FiBriefcase },
+    {
+      label: "Зауваження",
+      href: "/dashboard/designer/comments",
+      icon: FiMessageSquare,
+      badge: 8,
+    },
+    { label: "Документи", href: "/dashboard/designer/documents", icon: FiFileText },
+    {
+      label: "Архів",
+      href: "/dashboard/designer/archive",
+      icon: FiArchive,
+      badge: 6,
+    },
+    { label: "Налаштування", href: "/dashboard/designer/settings", icon: FiSettings },
+  ],
+
+  archivist: [
+    { label: "Архів", href: "/dashboard/archivist", icon: FiArchive },
+    { label: "Проєкти", href: "/dashboard/archivist/projects", icon: FiBriefcase },
+    {
+      label: "Сповіщення",
+      href: "/dashboard/archivist/notifications",
+      icon: FiBell,
+      badge: 4,
+    },
+    { label: "Налаштування", href: "/dashboard/archivist/settings", icon: FiSettings },
+  ],
+};
+
+export function SidebarNav({ role }: SidebarNavProps) {
+  const navItems = navByRole[role];
+
+  return (
+    <div className="flex flex-1 flex-col gap-1">
+      {navItems.map((item) => (
+        <SidebarNavItem
+          key={item.href}
+          label={item.label}
+          href={item.href}
+          icon={item.icon}
+          badge={item.badge}
+        />
+      ))}
+    </div>
+  );
+}
