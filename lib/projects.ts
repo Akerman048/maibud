@@ -2,7 +2,7 @@ import {
   ProjectStatus as PrismaProjectStatus,
   UserRole,
 } from "@/app/generated/prisma/client";
-import type { Project, ProjectStatus } from "@/data/mockProjects";
+import type { Project, ProjectStatus } from "@/types/project";
 import { prisma } from "@/lib/prisma";
 
 function mapProjectStatus(status: string): ProjectStatus {
