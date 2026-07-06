@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import type { Project } from "@/data/mockProjects";
-import { Input } from "@/components/ui/Input";
+import type { Project } from "@/types/project";import { Input } from "@/components/ui/Input";
 import { Tabs } from "@/components/ui/Tabs";
 import { ProjectTable } from "@/components/projects/ProjectTable";
 
@@ -16,6 +15,7 @@ type ProjectsViewProps = {
   projects: Project[];
   baseHref?: string;
   experts?: ExpertOption[];
+  archiveProjectAction?: (projectId: string) => Promise<void>;
   updateProjectAction?: (formData: FormData) => Promise<void>;
 };
 
@@ -24,6 +24,7 @@ export function ProjectsView({
   baseHref = "/project",
   experts = [],
   updateProjectAction,
+  archiveProjectAction,
 }: ProjectsViewProps) {
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
@@ -73,11 +74,7 @@ export function ProjectsView({
     <>
       <div className="flex items-center gap-5">
         <div className="flex-1">
-          <Tabs
-            items={tabs}
-            activeValue={activeTab}
-            onChange={setActiveTab}
-          />
+          <Tabs items={tabs} activeValue={activeTab} onChange={setActiveTab} />
         </div>
 
         <Input
@@ -88,12 +85,13 @@ export function ProjectsView({
         />
       </div>
 
-     <ProjectTable
-  projects={filteredProjects}
-  baseHref={baseHref}
-  experts={experts}
-  updateProjectAction={updateProjectAction}
-/>
+      <ProjectTable
+        projects={filteredProjects}
+        baseHref={baseHref}
+        experts={experts}
+        updateProjectAction={updateProjectAction}
+        archiveProjectAction={archiveProjectAction}
+      />
     </>
   );
 }

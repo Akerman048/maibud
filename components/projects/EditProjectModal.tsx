@@ -2,16 +2,15 @@
 
 import { useTransition } from "react";
 
+import type { ExpertOption } from "@/types/project";
+
 import type { Project } from "@/data/mockProjects";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 
-type ExpertOption = {
-  id: string;
-  name: string;
-};
+
 
 type EditProjectModalProps = {
   project: Project;

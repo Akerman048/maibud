@@ -1,4 +1,4 @@
-import type { Project } from "@/data/mockProjects";
+import type { Project } from "@/types/project";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 type ProjectInfoGridProps = {

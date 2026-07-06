@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import type { Project } from "@/data/mockProjects";
+import type { Project } from "@/types/project";
+import { EditProjectModal } from "@/components/projects/EditProjectModal";
 import { DropdownMenu } from "@/components/ui/DropdownMenu";
 import { Toast } from "@/components/ui/Toast";
-import { EditProjectModal } from "@/components/projects/EditProjectModal";
 
 type ExpertOption = {
   id: string;
@@ -18,6 +18,7 @@ type ProjectRowActionsProps = {
   baseHref: string;
   experts?: ExpertOption[];
   updateProjectAction?: (formData: FormData) => Promise<void>;
+  archiveProjectAction?: (projectId: string) => Promise<void>;
 };
 
 export function ProjectRowActions({
@@ -25,6 +26,7 @@ export function ProjectRowActions({
   baseHref,
   experts = [],
   updateProjectAction,
+  archiveProjectAction,
 }: ProjectRowActionsProps) {
   const router = useRouter();
 
@@ -50,7 +52,12 @@ export function ProjectRowActions({
           {
             label: "Архівувати",
             danger: true,
-            onClick: () => console.log("archive project", project.id),
+            onClick: async () => {
+              if (!archiveProjectAction) return;
+
+              await archiveProjectAction(project.id);
+              setToastMessage("Проєкт переміщено в архів.");
+            },
           },
         ]}
       />
@@ -66,10 +73,7 @@ export function ProjectRowActions({
       )}
 
       {toastMessage && (
-        <Toast
-          message={toastMessage}
-          onClose={() => setToastMessage("")}
-        />
+        <Toast message={toastMessage} onClose={() => setToastMessage("")} />
       )}
     </>
   );

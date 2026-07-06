@@ -146,3 +146,32 @@ export async function updateProject(formData: FormData) {
   revalidatePath("/dashboard/head");
   revalidatePath(`/dashboard/head/projects/${id}`);
 }
+
+
+export async function archiveProject(projectId: string) {
+  if (!projectId) {
+    throw new Error("Project id is required");
+  }
+
+  const project = await prisma.project.findUnique({
+    where: {
+      id: projectId,
+    },
+  });
+
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
+  await prisma.project.update({
+    where: {
+      id: projectId,
+    },
+    data: {
+      status: ProjectStatus.ARCHIVED,
+    },
+  });
+
+  revalidatePath("/dashboard/head");
+  revalidatePath("/dashboard/head/archive");
+}
