@@ -7,7 +7,7 @@ import { FiArrowLeft } from "react-icons/fi";
 import type { Project } from "@/types/project";
 
 import { mockRemarks } from "@/data/mockRemarks";
-import { mockDocuments } from "@/data/mockDocuments";
+import type { DocumentItem } from "@/types/document";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -16,6 +16,7 @@ import { ProjectTimeline } from "@/components/projects/ProjectTimeline";
 
 type ProjectDashboardDetailViewProps = {
   project: Project;
+  documents: DocumentItem[];
   backHref: string;
 };
 
@@ -45,6 +46,7 @@ const tabs: {
 
 export function ProjectDashboardDetailView({
   project,
+  documents,
   backHref,
 }: ProjectDashboardDetailViewProps) {
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
@@ -159,7 +161,7 @@ export function ProjectDashboardDetailView({
           </div>
 
           <div>
-            {mockDocuments.map((document) => (
+            {documents.map((document) => (
               <div
                 key={document.id}
                 className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0"
@@ -172,16 +174,27 @@ export function ProjectDashboardDetailView({
                   </div>
                 </div>
 
-                <Badge
-                  variant={
-                    document.status === "Актуальна" ||
-                    document.status === "Готово"
-                      ? "success"
-                      : "warning"
-                  }
-                >
-                  {document.status}
-                </Badge>
+<Badge
+  variant={
+    document.status === "approved"
+      ? "success"
+      : document.status === "submitted"
+        ? "info"
+        : document.status === "rejected"
+          ? "danger"
+          : "warning"
+  }
+>
+  {document.status === "draft"
+    ? "Чернетка"
+    : document.status === "submitted"
+      ? "На перевірці"
+      : document.status === "approved"
+        ? "Готово"
+        : document.status === "rejected"
+          ? "Відхилено"
+          : "Архів"}
+</Badge>
               </div>
             ))}
           </div>

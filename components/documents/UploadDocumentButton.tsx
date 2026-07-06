@@ -3,11 +3,26 @@
 import { useState } from "react";
 import { FiUpload } from "react-icons/fi";
 
-import { Button } from "@/components/ui/Button";
+import type { ProjectOption } from "@/types/project";
 import { UploadDocumentModal } from "@/components/documents/UploadDocumentModal";
+import { Button } from "@/components/ui/Button";
+import { Toast } from "@/components/ui/Toast";
 
-export function UploadDocumentButton() {
+type UploadDocumentButtonProps = {
+  projects: ProjectOption[];
+  createDocumentAction: (formData: FormData) => Promise<void>;
+};
+
+export function UploadDocumentButton({
+  projects,
+  createDocumentAction,
+}: UploadDocumentButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+
+  function handleUploaded() {
+    setToastMessage("Документ додано.");
+  }
 
   return (
     <>
@@ -17,7 +32,16 @@ export function UploadDocumentButton() {
       </Button>
 
       {isOpen && (
-        <UploadDocumentModal onClose={() => setIsOpen(false)} />
+        <UploadDocumentModal
+          projects={projects}
+          createDocumentAction={createDocumentAction}
+          onClose={() => setIsOpen(false)}
+          onUploaded={handleUploaded}
+        />
+      )}
+
+      {toastMessage && (
+        <Toast message={toastMessage} onClose={() => setToastMessage("")} />
       )}
     </>
   );

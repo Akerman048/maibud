@@ -33,3 +33,27 @@ export async function getDocuments(): Promise<DocumentItem[]> {
     status: mapDocumentStatus(document.status),
   }));
 }
+
+export async function getDocumentsByProjectId(
+  projectId: string,
+): Promise<DocumentItem[]> {
+  const documents = await prisma.document.findMany({
+    where: {
+      projectId,
+    },
+    include: {
+      project: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return documents.map((document) => ({
+    id: document.id,
+    name: document.title,
+    project: document.project.name,
+    type: getDocumentType(document.title),
+    status: mapDocumentStatus(document.status),
+  }));
+}

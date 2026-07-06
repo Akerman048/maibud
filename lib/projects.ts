@@ -69,6 +69,7 @@ export async function getProjects(): Promise<Project[]> {
 
   return projects.map(mapProject);
 }
+
 export async function getProjectById(id: string): Promise<Project | null> {
   const project = await prisma.project.findUnique({
     where: {
@@ -99,4 +100,23 @@ export async function getExperts() {
       name: "asc",
     },
   });
+}
+
+export async function getProjectOptions() {
+  const projects = await prisma.project.findMany({
+    where: {
+      status: {
+        not: PrismaProjectStatus.ARCHIVED,
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  return projects;
 }

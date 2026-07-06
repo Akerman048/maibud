@@ -1,26 +1,44 @@
 "use client";
 
-import type { FormEvent } from "react";
+import { useTransition } from "react";
 
+import type { ProjectOption } from "@/types/project";
 import { Button } from "@/components/ui/Button";
 import { FileUploadBox } from "@/components/ui/FileUploadBox";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { Select } from "@/components/ui/Select";
 
 type UploadDocumentModalProps = {
+  projects: ProjectOption[];
+  createDocumentAction: (formData: FormData) => Promise<void>;
   onClose: () => void;
+  onUploaded: () => void;
 };
 
 export function UploadDocumentModal({
+  projects,
+  createDocumentAction,
   onClose,
+  onUploaded,
 }: UploadDocumentModalProps) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const [isPending, startTransition] = useTransition();
 
-    console.log("Завантажуємо документ");
-
-    onClose();
+  async function handleSubmit(formData: FormData) {
+    startTransition(async () => {
+      await createDocumentAction(formData);
+      onUploaded();
+      onClose();
+    });
   }
+
+  const projectOptions = [
+    { label: "Оберіть проєкт", value: "" },
+    ...projects.map((project) => ({
+      label: project.name,
+      value: project.id,
+    })),
+  ];
 
   return (
     <Modal
@@ -28,11 +46,9 @@ export function UploadDocumentModal({
       description="Додайте файл до проєктної документації."
       onClose={onClose}
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form action={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold">
-            Назва документа
-          </label>
+          <label className="text-sm font-semibold">Назва документа</label>
 
           <Input
             name="name"
@@ -42,13 +58,12 @@ export function UploadDocumentModal({
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold">
-            Проєкт
-          </label>
+          <label className="text-sm font-semibold">Проєкт</label>
 
-          <Input
-            name="project"
-            placeholder="ЖК «Подільські вежі»"
+          <Select
+            name="projectId"
+            options={projectOptions}
+            defaultValue=""
             required
           />
         </div>
@@ -56,16 +71,12 @@ export function UploadDocumentModal({
         <FileUploadBox name="document" />
 
         <div className="mt-2 flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-          >
+          <Button type="button" variant="secondary" onClick={onClose}>
             Скасувати
           </Button>
 
-          <Button type="submit">
-            Завантажити
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Завантаження..." : "Завантажити"}
           </Button>
         </div>
       </form>

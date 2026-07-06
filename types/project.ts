@@ -20,3 +20,8 @@ export type ExpertOption = {
   id: string;
   name: string;
 };
+
+export type ProjectOption = {
+  id: string;
+  name: string;
+};
