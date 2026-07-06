@@ -24,77 +24,84 @@ export function ProjectTable({
   }
 
   return (
-    <Table>
-      <thead className="bg-slate-50">
-        <tr className="border-b border-[var(--color-border)]">
-          <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Проєкт
-          </th>
-          <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Замовник
-          </th>
-          <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Етап
-          </th>
-          <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Експерт
-          </th>
-          <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Дедлайн
-          </th>
-          <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Статус
-          </th>
-          <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Дії
-          </th>
-        </tr>
-      </thead>
+    <div className="overflow-x-auto">
+      <div className="min-w-[980px]">
+        <Table>
+          <thead className="bg-slate-50">
+            <tr className="border-b border-[var(--color-border)]">
+              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                Проєкт
+              </th>
+              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                Замовник
+              </th>
+              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                Етап
+              </th>
+              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                Експерт
+              </th>
+              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                Дедлайн
+              </th>
+              <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                Статус
+              </th>
+              <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                Дії
+              </th>
+            </tr>
+          </thead>
 
-      <tbody>
-        {projects.map((project) => (
-          <tr
-            key={project.id}
-            className="border-b border-[var(--color-border)] last:border-b-0 hover:bg-slate-50"
-          >
-            <td className="px-5 py-4">
-              <Link
-                href={`${baseHref}/${project.id}`}
-                className="font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-accent)]"
+          <tbody>
+            {projects.map((project) => (
+              <tr
+                key={project.id}
+                className="border-b border-[var(--color-border)] last:border-b-0 hover:bg-slate-50"
               >
-                {project.name}
-              </Link>
+                <td className="px-5 py-4">
+                  <Link
+                    href={`${baseHref}/${project.id}`}
+                    className="font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-accent)]"
+                  >
+                    {project.name}
+                  </Link>
 
-              <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                {project.address}
-              </div>
-            </td>
+                  <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                    {project.address}
+                  </div>
+                </td>
 
-            <td className="px-5 py-4 text-sm text-[var(--color-text-primary)]">
-              {project.customer}
-            </td>
+                <td className="px-5 py-4 text-sm text-[var(--color-text-primary)]">
+                  {project.customer}
+                </td>
 
-            <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">
-              {project.stage}
-            </td>
+                <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">
+                  {project.stage}
+                </td>
 
-            <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">
-              {project.expert}
-            </td>
+                <td className="px-5 py-4 text-sm text-[var(--color-text-secondary)]">
+                  {project.expert}
+                </td>
 
-            <td className="px-5 py-4 text-sm font-medium text-[var(--color-text-primary)]">
-              {project.deadline}
-            </td>
+                <td className="px-5 py-4 text-sm font-medium text-[var(--color-text-primary)]">
+                  {project.deadline}
+                </td>
 
-            <td className="px-5 py-4">
-              <StatusBadge status={project.status} />
-            </td>
-            <td className="px-5 py-4 text-right">
-              <ProjectRowActions projectId={project.id} baseHref={baseHref} />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
+                <td className="px-5 py-4">
+                  <StatusBadge status={project.status} />
+                </td>
+                <td className="px-5 py-4 text-right">
+                  <ProjectRowActions
+                    projectId={project.id}
+                    baseHref={baseHref}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </div>
+    </div>
   );
 }

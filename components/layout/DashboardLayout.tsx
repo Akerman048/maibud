@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+
+import { MobileSidebar } from "./MobileSidebar";
 import { Sidebar, type DashboardRole } from "./Sidebar";
 
 type DashboardLayoutProps = {
@@ -12,9 +14,15 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   return (
     <main className="flex min-h-screen bg-[var(--color-background)]">
-      <Sidebar role={role} />
+      <div className="hidden lg:block">
+        <Sidebar role={role} />
+      </div>
 
-      <section className="flex-1 p-8">{children}</section>
+      <MobileSidebar role={role} />
+
+      <section className="flex-1 p-5 pt-16 lg:p-8">
+        {children}
+      </section>
     </main>
   );
 }

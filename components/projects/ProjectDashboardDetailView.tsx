@@ -72,7 +72,8 @@ export function ProjectDashboardDetailView({
         </p>
       </div>
 
-      <div className="flex gap-1 border-b border-[var(--color-border)]">
+      <div className="flex overflow-x-auto border-b border-[var(--color-border)]">
+        {" "}
         {tabs.map((tab) => {
           const isActive = activeTab === tab.value;
 
@@ -81,7 +82,7 @@ export function ProjectDashboardDetailView({
               key={tab.value}
               type="button"
               onClick={() => setActiveTab(tab.value)}
-              className={`relative px-4 py-3 text-sm font-semibold transition ${
+              className={`relative shrink-0 px-4 py-3 text-sm font-semibold transition ${
                 isActive
                   ? "text-[var(--color-accent)]"
                   : "text-[var(--color-text-secondary)] hover:text-slate-700"
@@ -104,9 +105,7 @@ export function ProjectDashboardDetailView({
           </Card>
 
           <Card className="p-6">
-            <h2 className="mb-5 text-lg font-semibold">
-              Останні оновлення
-            </h2>
+            <h2 className="mb-5 text-lg font-semibold">Останні оновлення</h2>
 
             <ProjectTimeline />
           </Card>
@@ -127,9 +126,7 @@ export function ProjectDashboardDetailView({
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="font-semibold">
-                      {remark.section}
-                    </div>
+                    <div className="font-semibold">{remark.section}</div>
 
                     <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
                       {remark.text}
@@ -167,9 +164,7 @@ export function ProjectDashboardDetailView({
                 className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0"
               >
                 <div>
-                  <div className="font-semibold">
-                    {document.name}
-                  </div>
+                  <div className="font-semibold">{document.name}</div>
 
                   <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
                     {document.type}
@@ -194,9 +189,7 @@ export function ProjectDashboardDetailView({
 
       {activeTab === "journal" && (
         <Card className="p-6">
-          <h2 className="mb-5 text-lg font-semibold">
-            Журнал подій
-          </h2>
+          <h2 className="mb-5 text-lg font-semibold">Журнал подій</h2>
 
           <ProjectTimeline />
         </Card>
