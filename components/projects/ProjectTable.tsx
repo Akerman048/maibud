@@ -5,14 +5,23 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ProjectRowActions } from "@/components/projects/ProjectRowActions";
 import { Table } from "../ui/Table";
 
+type ExpertOption = {
+  id: string;
+  name: string;
+};
+
 type ProjectTableProps = {
   projects: Project[];
   baseHref?: string;
+  experts?: ExpertOption[];
+  updateProjectAction?: (formData: FormData) => Promise<void>;
 };
 
 export function ProjectTable({
   projects,
   baseHref = "/project",
+  experts = [],
+  updateProjectAction,
 }: ProjectTableProps) {
   if (projects.length === 0) {
     return (
@@ -92,10 +101,12 @@ export function ProjectTable({
                   <StatusBadge status={project.status} />
                 </td>
                 <td className="px-5 py-4 text-right">
-                  <ProjectRowActions
-                    projectId={project.id}
-                    baseHref={baseHref}
-                  />
+                 <ProjectRowActions
+  project={project}
+  baseHref={baseHref}
+  experts={experts}
+  updateProjectAction={updateProjectAction}
+/>
                 </td>
               </tr>
             ))}

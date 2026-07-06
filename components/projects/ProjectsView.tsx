@@ -7,14 +7,23 @@ import { Input } from "@/components/ui/Input";
 import { Tabs } from "@/components/ui/Tabs";
 import { ProjectTable } from "@/components/projects/ProjectTable";
 
+type ExpertOption = {
+  id: string;
+  name: string;
+};
+
 type ProjectsViewProps = {
   projects: Project[];
   baseHref?: string;
+  experts?: ExpertOption[];
+  updateProjectAction?: (formData: FormData) => Promise<void>;
 };
 
 export function ProjectsView({
   projects,
   baseHref = "/project",
+  experts = [],
+  updateProjectAction,
 }: ProjectsViewProps) {
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
@@ -82,6 +91,8 @@ export function ProjectsView({
      <ProjectTable
   projects={filteredProjects}
   baseHref={baseHref}
+  experts={experts}
+  updateProjectAction={updateProjectAction}
 />
     </>
   );

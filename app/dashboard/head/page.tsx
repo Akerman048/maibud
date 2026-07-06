@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { ProjectsView } from "@/components/projects/ProjectsView";
 import { getProjects, getExperts } from "@/lib/projects";
-import { createProject } from "./actions";
+import { createProject, updateProject } from "./actions";
 
 export default async function HeadPage() {
   const projects = await getProjects();
@@ -22,7 +22,12 @@ export default async function HeadPage() {
             />
           }
         />
-
+        <ProjectsView
+          projects={projects}
+          baseHref="/dashboard/head/projects"
+          experts={experts}
+          updateProjectAction={updateProject}
+        />
         <ProjectsView projects={projects} baseHref="/dashboard/head/projects" />
       </div>
     </DashboardLayout>
