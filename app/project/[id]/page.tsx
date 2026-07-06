@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { ProjectPublicDocuments } from "@/components/projects/ProjectPublicDocuments";
 
-import { mockProjects } from "@/data/mockProjects";
+import { getProjectById } from "@/lib/projects";
 import { ProjectStepper } from "@/components/projects/ProjectStepper";
 import { ProjectTimeline } from "@/components/projects/ProjectTimeline";
 import { ProjectInfoGrid } from "@/components/projects/ProjectInfoGrid";
@@ -17,7 +17,7 @@ type ProjectPageProps = {
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
 
-  const project = mockProjects.find((project) => project.id === id);
+const project = await getProjectById(id);
 
   if (!project) {
     notFound();
