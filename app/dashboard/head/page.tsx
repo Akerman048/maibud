@@ -2,10 +2,12 @@ import { AddProjectButton } from "@/components/projects/AddProjectButton";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { ProjectsView } from "@/components/projects/ProjectsView";
-import { getProjects } from "@/lib/projects";
+import { getProjects, getExperts } from "@/lib/projects";
+import { createProject } from "./actions";
 
 export default async function HeadPage() {
   const projects = await getProjects();
+  const experts = await getExperts();
 
   return (
     <DashboardLayout role="head">
@@ -13,13 +15,15 @@ export default async function HeadPage() {
         <Header
           title="Проєкти"
           notificationCount={3}
-          action={<AddProjectButton />}
+          action={
+            <AddProjectButton
+              experts={experts}
+              createProjectAction={createProject}
+            />
+          }
         />
 
-        <ProjectsView
-          projects={projects}
-          baseHref="/dashboard/head/projects"
-        />
+        <ProjectsView projects={projects} baseHref="/dashboard/head/projects" />
       </div>
     </DashboardLayout>
   );

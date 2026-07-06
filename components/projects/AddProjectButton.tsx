@@ -6,7 +6,20 @@ import { AddProjectModal } from "@/components/projects/AddProjectModal";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 
-export function AddProjectButton() {
+type ExpertOption = {
+  id: string;
+  name: string;
+};
+
+type AddProjectButtonProps = {
+  experts: ExpertOption[];
+  createProjectAction: (formData: FormData) => Promise<void>;
+};
+
+export function AddProjectButton({
+  experts,
+  createProjectAction,
+}: AddProjectButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
@@ -22,16 +35,15 @@ export function AddProjectButton() {
 
       {isOpen && (
         <AddProjectModal
+          experts={experts}
+          createProjectAction={createProjectAction}
           onClose={() => setIsOpen(false)}
           onCreated={handleCreated}
         />
       )}
 
       {toastMessage && (
-        <Toast
-          message={toastMessage}
-          onClose={() => setToastMessage("")}
-        />
+        <Toast message={toastMessage} onClose={() => setToastMessage("")} />
       )}
     </>
   );

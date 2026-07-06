@@ -1,5 +1,6 @@
-import { prisma } from "@/lib/prisma";
+import { UserRole } from "@/app/generated/prisma/client";
 import type { Project, ProjectStatus } from "@/data/mockProjects";
+import { prisma } from "@/lib/prisma";
 
 function mapProjectStatus(status: string): ProjectStatus {
   if (status === "OPEN") return "open";
@@ -11,23 +12,86 @@ function mapProjectStatus(status: string): ProjectStatus {
   return "open";
 }
 
-export async function getProjects(): Promise<Project[]> {
-  const projects = await prisma.project.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+function mapProject(project: {
+  id: string;
+  name: string;
+  address: string;
+  customer: string;
+  stage: string;
+  deadline: Date | null;
+  status: string;
+  members: {
+    role: UserRole;
+    user: {
+      name: string;
+    };
+  }[];
+}): Project {
+  const expertMember = project.members.find(
+    (member) => member.role === UserRole.EXPERT,
+  );
 
-  return projects.map((project) => ({
+  return {
     id: project.id,
     name: project.name,
     address: project.address,
     customer: project.customer,
     stage: project.stage,
-    expert: "Коваль Олег",
+    expert: expertMember?.user.name ?? "Не призначено",
     deadline: project.deadline
       ? project.deadline.toLocaleDateString("uk-UA")
       : "—",
     status: mapProjectStatus(project.status),
-  }));
+  };
+}
+
+export async function getProjects(): Promise<Project[]> {
+  const projects = await prisma.project.findMany({
+    include: {
+      members: {
+        include: {
+          user: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return projects.map(mapProject);
+}
+
+export async function getProjectById(
+  id: string,
+): Promise<Project | null> {
+  const project = await prisma.project.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      members: {
+        include: {
+          user: true,
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    return null;
+  }
+
+  return mapProject(project);
+}
+
+export async function getExperts() {
+  return prisma.user.findMany({
+    where: {
+      role: UserRole.EXPERT,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
 }

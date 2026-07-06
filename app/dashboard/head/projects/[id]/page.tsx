@@ -1,34 +1,33 @@
-import { notFound } from "next/navigation";
-
-import { mockProjects } from "@/data/mockProjects";
+import { createProject } from "@/app/dashboard/head/actions";
+import { AddProjectButton } from "@/components/projects/AddProjectButton";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { ProjectDashboardDetailView } from "@/components/projects/ProjectDashboardDetailView";
+import { Header } from "@/components/layout/Header";
+import { ProjectsView } from "@/components/projects/ProjectsView";
+import { getExperts, getProjects } from "@/lib/projects";
 
-type PageProps = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-export default async function HeadProjectDetailPage({
-  params,
-}: PageProps) {
-  const { id } = await params;
-
-  const project = mockProjects.find(
-    (project) => project.id === id,
-  );
-
-  if (!project) {
-    notFound();
-  }
+export default async function HeadPage() {
+  const projects = await getProjects();
+  const experts = await getExperts();
 
   return (
     <DashboardLayout role="head">
-      <ProjectDashboardDetailView
-        project={project}
-        backHref="/dashboard/head"
-      />
+      <div className="flex flex-col gap-[22px]">
+        <Header
+          title="Проєкти"
+          notificationCount={3}
+          action={
+            <AddProjectButton
+              experts={experts}
+              createProjectAction={createProject}
+            />
+          }
+        />
+
+        <ProjectsView
+          projects={projects}
+          baseHref="/dashboard/head/projects"
+        />
+      </div>
     </DashboardLayout>
   );
 }
