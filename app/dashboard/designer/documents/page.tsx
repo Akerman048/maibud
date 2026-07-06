@@ -1,9 +1,12 @@
 import { DocumentsView } from "@/components/documents/DocumentsView";
+import { UploadDocumentButton } from "@/components/documents/UploadDocumentButton";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
-import { UploadDocumentButton } from "@/components/documents/UploadDocumentButton";
+import { getDocuments } from "@/lib/documents";
 
-export default function DesignerDocumentsPage() {
+export default async function DesignerDocumentsPage() {
+  const documents = await getDocuments();
+
   return (
     <DashboardLayout role="designer">
       <div className="flex flex-col gap-[22px]">
@@ -11,8 +14,9 @@ export default function DesignerDocumentsPage() {
           title="Документи"
           subtitle="Завантажені файли проєктів"
           action={<UploadDocumentButton />}
-        />{" "}
-        <DocumentsView />
+        />
+
+        <DocumentsView documents={documents} />
       </div>
     </DashboardLayout>
   );
