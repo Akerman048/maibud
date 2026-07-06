@@ -1,12 +1,14 @@
-import { mockProjects } from "@/data/mockProjects";
+import { AddProjectButton } from "@/components/projects/AddProjectButton";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
-import { AddProjectButton } from "@/components/projects/AddProjectButton";
 import { ProjectsView } from "@/components/projects/ProjectsView";
+import { getProjects } from "@/lib/projects";
 
-export default function HeadPage() {
+export default async function HeadPage() {
+  const projects = await getProjects();
+
   return (
-    <DashboardLayout>
+    <DashboardLayout role="head">
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Проєкти"
@@ -15,7 +17,7 @@ export default function HeadPage() {
         />
 
         <ProjectsView
-          projects={mockProjects}
+          projects={projects}
           baseHref="/dashboard/head/projects"
         />
       </div>
