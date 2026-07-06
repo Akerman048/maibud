@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 
+import type { ExpertOption } from "@/types/project";
+
 import { AddProjectModal } from "@/components/projects/AddProjectModal";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 
-type ExpertOption = {
-  id: string;
-  name: string;
-};
+
 
 type AddProjectButtonProps = {
   experts: ExpertOption[];

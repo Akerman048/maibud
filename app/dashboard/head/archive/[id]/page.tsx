@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 
-import { mockArchiveProjects } from "@/data/mockArchiveProjects";
 import { ArchiveDetailView } from "@/components/archive/ArchiveDetailView";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { getArchiveProjectById } from "@/lib/archive";
 
 type PageProps = {
   params: Promise<{
@@ -10,14 +10,10 @@ type PageProps = {
   }>;
 };
 
-export default async function HeadArchiveDetailPage({
-  params,
-}: PageProps) {
+export default async function HeadArchiveDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const project = mockArchiveProjects.find(
-    (project) => project.id === id,
-  );
+  const project = await getArchiveProjectById(id);
 
   if (!project) {
     notFound();

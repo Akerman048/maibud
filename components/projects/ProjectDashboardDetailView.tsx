@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
 
-import type { Project } from "@/data/mockProjects";
+import type { Project } from "@/types/project";
+
 import { mockRemarks } from "@/data/mockRemarks";
 import { mockDocuments } from "@/data/mockDocuments";
 

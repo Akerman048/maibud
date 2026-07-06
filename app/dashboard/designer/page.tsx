@@ -1,20 +1,23 @@
-import { mockProjects } from "@/data/mockProjects";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { ProjectsView } from "@/components/projects/ProjectsView";
 import { ShareProjectButton } from "@/components/share/ShareProjectButton";
+import { getProjects } from "@/lib/projects";
 
-export default function DesignerPage() {
+export default async function DesignerPage() {
+  const projects = await getProjects();
+
   return (
-    <DashboardLayout role="expert">
+    <DashboardLayout role="designer">
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Мої проєкти"
-          subtitle="ТОВ «Проєктбуд» · 3 активні проєкти"
+          subtitle="ТОВ «Проєктбуд»"
           action={<ShareProjectButton />}
         />
+
         <ProjectsView
-          projects={mockProjects}
+          projects={projects}
           baseHref="/dashboard/designer/projects"
         />
       </div>

@@ -1,10 +1,11 @@
-import { mockProjects } from "@/data/mockProjects";
-
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { ProjectsView } from "@/components/projects/ProjectsView";
+import { getProjects } from "@/lib/projects";
 
-export default function ArchivistProjectsPage() {
+export default async function ArchivistProjectsPage() {
+  const projects = await getProjects();
+
   return (
     <DashboardLayout role="archivist">
       <div className="flex flex-col gap-[22px]">
@@ -14,7 +15,7 @@ export default function ArchivistProjectsPage() {
         />
 
         <ProjectsView
-          projects={mockProjects}
+          projects={projects}
           baseHref="/dashboard/archivist/projects"
         />
       </div>

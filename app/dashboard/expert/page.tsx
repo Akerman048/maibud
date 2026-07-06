@@ -1,19 +1,21 @@
-import { mockProjects } from "@/data/mockProjects";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { ProjectsView } from "@/components/projects/ProjectsView";
+import { getProjects } from "@/lib/projects";
 
-export default function ExpertPage() {
+export default async function ExpertPage() {
+  const projects = await getProjects();
+
   return (
     <DashboardLayout role="expert">
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Мої проєкти"
-          subtitle="Напрям: Газопостачання · 3 активні проєкти"
+          subtitle="Напрям: Газопостачання"
         />
 
         <ProjectsView
-          projects={mockProjects}
+          projects={projects}
           baseHref="/dashboard/expert/projects"
         />
       </div>

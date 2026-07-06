@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { mockProjects } from "@/data/mockProjects";
+import { getProjectById } from "@/lib/projects";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProjectDashboardDetailView } from "@/components/projects/ProjectDashboardDetailView";
 
@@ -10,12 +10,10 @@ type PageProps = {
   }>;
 };
 
-export default async function ExpertProjectDetailPage({
-  params,
-}: PageProps) {
+export default async function ExpertProjectDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const project = mockProjects.find((project) => project.id === id);
+  const project = await getProjectById(id);
 
   if (!project) {
     notFound();

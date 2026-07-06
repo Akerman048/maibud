@@ -4,6 +4,7 @@ import { useTransition } from "react";
 
 import type { ExpertOption } from "@/types/project";
 
+import type { Project } from "@/types/project";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -11,77 +12,65 @@ import { Select } from "@/components/ui/Select";
 
 
 
-type AddProjectModalProps = {
+type EditProjectModalProps = {
+  project: Project;
   experts: ExpertOption[];
-  createProjectAction: (formData: FormData) => Promise<void>;
+  updateProjectAction: (formData: FormData) => Promise<void>;
   onClose: () => void;
-  onCreated: () => void;
+  onUpdated: () => void;
 };
 
 const stageOptions = [
-  { label: "Оберіть етап", value: "" },
   { label: "Первинна перевірка", value: "Первинна перевірка" },
   { label: "Експертиза", value: "Експертиза" },
   { label: "Доопрацювання", value: "Доопрацювання" },
   { label: "Фінальна перевірка", value: "Фінальна перевірка" },
 ];
 
-export function AddProjectModal({
-  experts = [],
-  createProjectAction,
+export function EditProjectModal({
+  project,
+  experts,
+  updateProjectAction,
   onClose,
-  onCreated,
-}: AddProjectModalProps) {
+  onUpdated,
+}: EditProjectModalProps) {
   const [isPending, startTransition] = useTransition();
 
   async function handleSubmit(formData: FormData) {
     startTransition(async () => {
-      await createProjectAction(formData);
-      onCreated();
+      await updateProjectAction(formData);
+      onUpdated();
       onClose();
     });
   }
 
-  const expertOptions = [
-    { label: "Оберіть експерта", value: "" },
-    ...(experts ?? []).map((expert) => ({
-      label: expert.name,
-      value: expert.id,
-    })),
-  ];
+  const expertOptions = experts.map((expert) => ({
+    label: expert.name,
+    value: expert.id,
+  }));
 
   return (
     <Modal
-      title="Додати проєкт"
-      description="Створіть новий проєкт для проходження експертизи."
+      title="Редагувати проєкт"
+      description="Оновіть основну інформацію про проєкт."
       onClose={onClose}
     >
       <form action={handleSubmit} className="flex flex-col gap-4">
+        <input type="hidden" name="id" value={project.id} />
+
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold">Назва проєкту</label>
-          <Input
-            name="name"
-            placeholder="Наприклад: ЖК «Подільські вежі»"
-            required
-          />
+          <Input name="name" defaultValue={project.name} required />
         </div>
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold">Адреса</label>
-          <Input
-            name="address"
-            placeholder="вул. Кирилівська, 41, м. Київ"
-            required
-          />
+          <Input name="address" defaultValue={project.address} required />
         </div>
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold">Замовник</label>
-          <Input
-            name="customer"
-            placeholder="ТОВ «Поділ Девелопмент»"
-            required
-          />{" "}
+          <Input name="customer" defaultValue={project.customer} required />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -90,7 +79,7 @@ export function AddProjectModal({
             <Select
               name="stage"
               options={stageOptions}
-              defaultValue=""
+              defaultValue={project.stage}
               required
             />
           </div>
@@ -100,7 +89,7 @@ export function AddProjectModal({
             <Select
               name="expert"
               options={expertOptions}
-              defaultValue=""
+              defaultValue={experts[0]?.id ?? ""}
               required
             />
           </div>
@@ -117,7 +106,7 @@ export function AddProjectModal({
           </Button>
 
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Створення..." : "Створити проєкт"}
+            {isPending ? "Збереження..." : "Зберегти"}
           </Button>
         </div>
       </form>

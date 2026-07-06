@@ -1,18 +1,29 @@
 import Link from "next/link";
-import type { Project } from "@/data/mockProjects";
+import type { Project } from "@/types/project";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProjectRowActions } from "@/components/projects/ProjectRowActions";
 import { Table } from "../ui/Table";
 
+type ExpertOption = {
+  id: string;
+  name: string;
+};
+
 type ProjectTableProps = {
   projects: Project[];
   baseHref?: string;
+  experts?: ExpertOption[];
+  updateProjectAction?: (formData: FormData) => Promise<void>;
+  archiveProjectAction?: (projectId: string) => Promise<void>;
 };
 
 export function ProjectTable({
   projects,
   baseHref = "/project",
+  experts = [],
+  updateProjectAction,
+  archiveProjectAction,
 }: ProjectTableProps) {
   if (projects.length === 0) {
     return (
@@ -93,8 +104,11 @@ export function ProjectTable({
                 </td>
                 <td className="px-5 py-4 text-right">
                   <ProjectRowActions
-                    projectId={project.id}
+                    project={project}
                     baseHref={baseHref}
+                    experts={experts}
+                    updateProjectAction={updateProjectAction}
+                    archiveProjectAction={archiveProjectAction}
                   />
                 </td>
               </tr>

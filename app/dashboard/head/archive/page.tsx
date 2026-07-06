@@ -1,21 +1,23 @@
-import { mockArchiveProjects } from "@/data/mockArchiveProjects";
-
+import { getArchiveProjects } from "@/lib/archive";
 import { ArchiveView } from "@/components/archive/ArchiveView";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 
-export default function HeadArchivePage() {
+export default async function HeadArchivePage() {
+  const archiveProjects = await getArchiveProjects();
+
   return (
     <DashboardLayout role="head">
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Архів"
-          subtitle={`${mockArchiveProjects.length} архівні справи`}
+          subtitle={`${archiveProjects.length} архівні справи`}
         />
+
         <ArchiveView
-          projects={mockArchiveProjects}
+          projects={archiveProjects}
           baseHref="/dashboard/head/archive"
-        />{" "}
+        />
       </div>
     </DashboardLayout>
   );

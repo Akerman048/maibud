@@ -1,9 +1,10 @@
-import { AddProjectButton } from "@/components/projects/AddProjectButton";
+import { archiveProject, createProject, updateProject } from "./actions";
+
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
+import { AddProjectButton } from "@/components/projects/AddProjectButton";
 import { ProjectsView } from "@/components/projects/ProjectsView";
-import { getProjects, getExperts } from "@/lib/projects";
-import { createProject } from "./actions";
+import { getExperts, getProjects } from "@/lib/projects";
 
 export default async function HeadPage() {
   const projects = await getProjects();
@@ -23,7 +24,13 @@ export default async function HeadPage() {
           }
         />
 
-        <ProjectsView projects={projects} baseHref="/dashboard/head/projects" />
+        <ProjectsView
+          projects={projects}
+          baseHref="/dashboard/head/projects"
+          experts={experts}
+          updateProjectAction={updateProject}
+          archiveProjectAction={archiveProject}
+        />
       </div>
     </DashboardLayout>
   );

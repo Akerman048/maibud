@@ -1,5 +1,8 @@
-import { UserRole } from "@/app/generated/prisma/client";
-import type { Project, ProjectStatus } from "@/data/mockProjects";
+import {
+  ProjectStatus as PrismaProjectStatus,
+  UserRole,
+} from "@/app/generated/prisma/client";
+import type { Project, ProjectStatus } from "@/types/project";
 import { prisma } from "@/lib/prisma";
 
 function mapProjectStatus(status: string): ProjectStatus {
@@ -47,6 +50,11 @@ function mapProject(project: {
 
 export async function getProjects(): Promise<Project[]> {
   const projects = await prisma.project.findMany({
+    where: {
+      status: {
+        not: PrismaProjectStatus.ARCHIVED,
+      },
+    },
     include: {
       members: {
         include: {
@@ -61,10 +69,7 @@ export async function getProjects(): Promise<Project[]> {
 
   return projects.map(mapProject);
 }
-
-export async function getProjectById(
-  id: string,
-): Promise<Project | null> {
+export async function getProjectById(id: string): Promise<Project | null> {
   const project = await prisma.project.findUnique({
     where: {
       id,
