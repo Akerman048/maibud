@@ -5,6 +5,7 @@ import {
   PrismaClient,
   ProjectStatus,
   UserRole,
+  DocumentStatus,
 } from "../app/generated/prisma/client";
 
 const adapter = new PrismaPg({
@@ -15,8 +16,11 @@ const prisma = new PrismaClient({
   adapter,
 });
 
-
 async function main() {
+  await prisma.comment.deleteMany();
+  await prisma.documentVersion.deleteMany();
+  await prisma.document.deleteMany();
+  await prisma.auditLog.deleteMany();
   await prisma.projectMember.deleteMany();
   await prisma.project.deleteMany();
   await prisma.organization.deleteMany();
@@ -87,6 +91,29 @@ async function main() {
       },
     }),
   ]);
+
+  await prisma.document.createMany({
+    data: [
+      {
+        title: "Проєктна документація.pdf",
+        status: DocumentStatus.SUBMITTED,
+        projectId: projects[0].id,
+        authorId: designer.id,
+      },
+      {
+        title: "Розділ газопостачання.dwg",
+        status: DocumentStatus.SUBMITTED,
+        projectId: projects[0].id,
+        authorId: designer.id,
+      },
+      {
+        title: "Експертний висновок.docx",
+        status: DocumentStatus.APPROVED,
+        projectId: projects[1].id,
+        authorId: expert.id,
+      },
+    ],
+  });
 
   for (const project of projects) {
     await prisma.projectMember.createMany({
