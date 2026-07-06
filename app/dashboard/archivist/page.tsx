@@ -1,4 +1,3 @@
-import { mockProjects } from "@/data/mockProjects";
 
 import { ArchiveView } from "@/components/archive/ArchiveView";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";

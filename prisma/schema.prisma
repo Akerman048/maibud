@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  HEAD
+  EXPERT
+  DESIGNER
+  ARCHIVIST
+  CLIENT
+}
+
+enum ProjectStatus {
+  OPEN
+  IN_PROGRESS
+  RETURNED
+  COMPLETED
+  ARCHIVED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      UserRole @default(DESIGNER)
+
+  memberships ProjectMember[]
+
+  documents        Document[]
+  documentVersions DocumentVersion[]
+  comments         Comment[]
+  auditLogs        AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Organization {
+  id   String @id @default(cuid())
+  name String
+
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  name           String
+  address        String
+  customer       String
+  stage          String
+  status         ProjectStatus @default(OPEN)
+  deadline       DateTime?
+
+  documents Document[]
+  auditLogs AuditLog[]
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  members ProjectMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  role      UserRole
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, projectId])
+}
+
+enum DocumentStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+model Document {
+  id          String         @id @default(cuid())
+  title       String
+  status      DocumentStatus @default(DRAFT)
+
+  projectId   String
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  authorId    String
+  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  versions    DocumentVersion[]
+  comments    Comment[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  version     Int
+  fileUrl     String
+  fileName    String
+  fileSize    Int?
+
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([documentId, version])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  content     String
+
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String
+
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+}
