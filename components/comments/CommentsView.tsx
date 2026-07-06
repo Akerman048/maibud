@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-type RemarksViewProps = {
+type CommentsViewProps = {
   comments: CommentItem[];
 };
 
@@ -23,7 +23,7 @@ function getStatusVariant(status: CommentItem["status"]) {
   return "warning";
 }
 
-export function RemarksView({ comments }: RemarksViewProps) {
+export function CommentsView({ comments }: CommentsViewProps) {
   if (comments.length === 0) {
     return (
       <EmptyState

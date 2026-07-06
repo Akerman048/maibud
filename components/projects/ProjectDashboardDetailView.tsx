@@ -6,7 +6,7 @@ import { FiArrowLeft } from "react-icons/fi";
 
 import type { Project } from "@/types/project";
 
-import { mockRemarks } from "@/data/mockRemarks";
+import type { CommentItem } from "@/types/comment";
 import type { DocumentItem } from "@/types/document";
 
 import { Badge } from "@/components/ui/Badge";
@@ -17,6 +17,7 @@ import { ProjectTimeline } from "@/components/projects/ProjectTimeline";
 type ProjectDashboardDetailViewProps = {
   project: Project;
   documents: DocumentItem[];
+  comments: CommentItem[];
   backHref: string;
 };
 
@@ -47,6 +48,7 @@ const tabs: {
 export function ProjectDashboardDetailView({
   project,
   documents,
+  comments,
   backHref,
 }: ProjectDashboardDetailViewProps) {
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
@@ -122,31 +124,35 @@ export function ProjectDashboardDetailView({
           </div>
 
           <div>
-            {mockRemarks.map((remark) => (
+            {comments.map((comment) => (
               <div
-                key={remark.id}
+                key={comment.id}
                 className="border-b border-slate-100 px-5 py-4 last:border-b-0"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="font-semibold">{remark.section}</div>
+                    <div className="font-semibold">{comment.section}</div>
 
                     <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                      {remark.text}
+                      {comment.text}
                     </p>
                   </div>
 
-                  <Badge
-                    variant={
-                      remark.status === "Відкрите"
-                        ? "warning"
-                        : remark.status === "Відпрацьоване"
-                          ? "info"
-                          : "danger"
-                    }
-                  >
-                    {remark.status}
-                  </Badge>
+<Badge
+  variant={
+    comment.status === "resolved"
+      ? "success"
+      : comment.status === "returned"
+        ? "danger"
+        : "warning"
+  }
+>
+  {comment.status === "open"
+    ? "Відкрите"
+    : comment.status === "resolved"
+      ? "Відпрацьоване"
+      : "Повернено"}
+</Badge>
                 </div>
               </div>
             ))}

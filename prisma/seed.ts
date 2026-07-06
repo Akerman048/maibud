@@ -5,7 +5,6 @@ import {
   PrismaClient,
   ProjectStatus,
   UserRole,
-  DocumentStatus,
 } from "../app/generated/prisma/client";
 
 const adapter = new PrismaPg({
@@ -92,28 +91,47 @@ async function main() {
     }),
   ]);
 
-  await prisma.document.createMany({
-    data: [
-      {
-        title: "Проєктна документація.pdf",
-        status: DocumentStatus.SUBMITTED,
-        projectId: projects[0].id,
-        authorId: designer.id,
-      },
-      {
-        title: "Розділ газопостачання.dwg",
-        status: DocumentStatus.SUBMITTED,
-        projectId: projects[0].id,
-        authorId: designer.id,
-      },
-      {
-        title: "Експертний висновок.docx",
-        status: DocumentStatus.APPROVED,
-        projectId: projects[1].id,
-        authorId: expert.id,
-      },
-    ],
-  });
+const document1 = await prisma.document.create({
+  data: {
+    title: "Проєктна документація.pdf",
+    status: "SUBMITTED",
+    projectId: projects[0].id,
+    authorId: designer.id,
+  },
+});
+
+const document2 = await prisma.document.create({
+  data: {
+    title: "Розділ газопостачання.dwg",
+    status: "SUBMITTED",
+    projectId: projects[0].id,
+    authorId: designer.id,
+  },
+});
+
+await prisma.document.create({
+  data: {
+    title: "Експертний висновок.docx",
+    status: "APPROVED",
+    projectId: projects[1].id,
+    authorId: expert.id,
+  },
+});
+
+await prisma.comment.createMany({
+  data: [
+    {
+      content: "Необхідно уточнити схему підключення до зовнішньої мережі.",
+      documentId: document1.id,
+      authorId: expert.id,
+    },
+    {
+      content: "Потрібно оновити розрахунок повітрообміну.",
+      documentId: document2.id,
+      authorId: expert.id,
+    },
+  ],
+});
 
   for (const project of projects) {
     await prisma.projectMember.createMany({

@@ -1,13 +1,20 @@
+import { CommentsView } from "@/components/comments/CommentsView";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
-import { RemarksView } from "@/components/remarks/RemarksView";
+import { getComments } from "@/lib/comments";
 
-export default function DesignerCommentsPage() {
+export default async function DesignerCommentsPage() {
+  const comments = await getComments();
+
   return (
     <DashboardLayout role="designer">
       <div className="flex flex-col gap-[22px]">
-        <Header title="Зауваження" subtitle="8 зауважень потребують відповіді" />
-        <RemarksView />
+        <Header
+          title="Зауваження"
+          subtitle="Зауваження експертів до ваших документів"
+        />
+
+        <CommentsView comments={comments} />
       </div>
     </DashboardLayout>
   );
