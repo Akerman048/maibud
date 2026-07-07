@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProjectDashboardDetailView } from "@/components/projects/ProjectDashboardDetailView";
 import { getDocumentsByProjectId } from "@/lib/documents";
 import { getCommentsByProjectId } from "@/lib/comments";
+import { createComment } from "./actions";
 
 type PageProps = {
   params: Promise<{
@@ -28,11 +29,12 @@ const [project, documents, comments] = await Promise.all([
   return (
     <DashboardLayout role="expert">
       <ProjectDashboardDetailView
-        project={project}
-        documents={documents}
-        comments={comments}
-        backHref="/dashboard/expert"
-      />
+  project={project}
+  documents={documents}
+  comments={comments}
+  backHref="/dashboard/expert"
+  createCommentAction={createComment}
+/>
     </DashboardLayout>
   );
 }

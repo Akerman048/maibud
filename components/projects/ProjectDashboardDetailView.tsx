@@ -9,6 +9,7 @@ import type { Project } from "@/types/project";
 import type { CommentItem } from "@/types/comment";
 import type { DocumentItem } from "@/types/document";
 
+import { AddCommentButton } from "@/components/comments/AddCommentButton";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ProjectInfoGrid } from "@/components/projects/ProjectInfoGrid";
@@ -19,6 +20,7 @@ type ProjectDashboardDetailViewProps = {
   documents: DocumentItem[];
   comments: CommentItem[];
   backHref: string;
+  createCommentAction?: (formData: FormData) => Promise<void>;
 };
 
 type ProjectTab = "overview" | "remarks" | "documents" | "journal";
@@ -50,6 +52,7 @@ export function ProjectDashboardDetailView({
   documents,
   comments,
   backHref,
+  createCommentAction,
 }: ProjectDashboardDetailViewProps) {
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
 
@@ -162,9 +165,17 @@ export function ProjectDashboardDetailView({
 
       {activeTab === "documents" && (
         <Card className="overflow-hidden">
-          <div className="border-b border-[var(--color-border)] px-5 py-4">
-            <h2 className="font-semibold">Документи проєкту</h2>
-          </div>
+         <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
+  <h2 className="font-semibold">Документи проєкту</h2>
+
+  {createCommentAction && (
+    <AddCommentButton
+      projectId={project.id}
+      documents={documents}
+      createCommentAction={createCommentAction}
+    />
+  )}
+</div>
 
           <div>
             {documents.map((document) => (
