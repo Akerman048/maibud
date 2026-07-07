@@ -3,9 +3,12 @@ import type { CommentItem } from "@/types/comment";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/Button";
 
 type CommentsViewProps = {
   comments: CommentItem[];
+  resolveCommentAction?: (formData: FormData) => Promise<void>;
+  returnCommentAction?: (formData: FormData) => Promise<void>;
 };
 
 function getStatusLabel(status: CommentItem["status"]) {
@@ -23,7 +26,11 @@ function getStatusVariant(status: CommentItem["status"]) {
   return "warning";
 }
 
-export function CommentsView({ comments }: CommentsViewProps) {
+export function CommentsView({
+  comments,
+  resolveCommentAction,
+  returnCommentAction,
+}: CommentsViewProps) {
   if (comments.length === 0) {
     return (
       <EmptyState
@@ -50,9 +57,31 @@ export function CommentsView({ comments }: CommentsViewProps) {
               </p>
             </div>
 
-            <Badge variant={getStatusVariant(comment.status)}>
-              {getStatusLabel(comment.status)}
-            </Badge>
+            <div className="flex shrink-0 flex-col items-end gap-3">
+              <Badge variant={getStatusVariant(comment.status)}>
+                {getStatusLabel(comment.status)}
+              </Badge>
+
+              {comment.status === "open" && resolveCommentAction && (
+                <form action={resolveCommentAction}>
+                  <input type="hidden" name="commentId" value={comment.id} />
+
+                  <Button type="submit" variant="secondary">
+                    Позначити виконаним
+                  </Button>
+                </form>
+              )}
+
+              {comment.status === "resolved" && returnCommentAction && (
+                <form action={returnCommentAction}>
+                  <input type="hidden" name="commentId" value={comment.id} />
+
+                  <Button type="submit" variant="secondary">
+                    Повернути
+                  </Button>
+                </form>
+              )}
+            </div>
           </div>
         </Card>
       ))}

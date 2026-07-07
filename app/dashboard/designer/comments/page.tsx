@@ -2,6 +2,7 @@ import { CommentsView } from "@/components/comments/CommentsView";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { getComments } from "@/lib/comments";
+import { resolveComment } from "./actions";
 
 export default async function DesignerCommentsPage() {
   const comments = await getComments();
@@ -14,7 +15,10 @@ export default async function DesignerCommentsPage() {
           subtitle="Зауваження експертів до ваших документів"
         />
 
-        <CommentsView comments={comments} />
+        <CommentsView
+  comments={comments}
+  resolveCommentAction={resolveComment}
+/>
       </div>
     </DashboardLayout>
   );

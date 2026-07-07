@@ -21,7 +21,7 @@ export async function getComments(): Promise<CommentItem[]> {
     projectName: comment.document.project.name,
     section: "Документація",
     text: comment.content,
-    status: "open",
+    status: mapCommentStatus(comment.status),
   }));
 }
 
@@ -52,6 +52,13 @@ export async function getCommentsByProjectId(
     projectName: comment.document.project.name,
     section: "Документація",
     text: comment.content,
-    status: "open",
+    status: mapCommentStatus(comment.status),
   }));
+}
+
+function mapCommentStatus(status: string) {
+  if (status === "RESOLVED") return "resolved";
+  if (status === "RETURNED") return "returned";
+
+  return "open";
 }

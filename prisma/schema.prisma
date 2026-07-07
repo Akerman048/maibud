@@ -133,6 +133,8 @@ model Comment {
   id      String @id @default(cuid())
   content String
 
+  status CommentStatus @default(OPEN)
+
   documentId String
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
@@ -156,4 +158,10 @@ model AuditLog {
   project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
+}
+
+enum CommentStatus {
+  OPEN
+  RESOLVED
+  RETURNED
 }
