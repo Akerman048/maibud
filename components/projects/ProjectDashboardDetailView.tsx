@@ -89,7 +89,10 @@ export function ProjectDashboardDetailView({
             <button
               key={tab.value}
               type="button"
-              onClick={() => setActiveTab(tab.value)}
+              onClick={() => {
+                console.log("tab clicked", tab.value);
+                setActiveTab(tab.value);
+              }}
               className={`relative shrink-0 px-4 py-3 text-sm font-semibold transition ${
                 isActive
                   ? "text-[var(--color-accent)]"
@@ -141,21 +144,21 @@ export function ProjectDashboardDetailView({
                     </p>
                   </div>
 
-<Badge
-  variant={
-    comment.status === "resolved"
-      ? "success"
-      : comment.status === "returned"
-        ? "danger"
-        : "warning"
-  }
->
-  {comment.status === "open"
-    ? "Відкрите"
-    : comment.status === "resolved"
-      ? "Відпрацьоване"
-      : "Повернено"}
-</Badge>
+                  <Badge
+                    variant={
+                      comment.status === "resolved"
+                        ? "success"
+                        : comment.status === "returned"
+                          ? "danger"
+                          : "warning"
+                    }
+                  >
+                    {comment.status === "open"
+                      ? "Відкрите"
+                      : comment.status === "resolved"
+                        ? "Відпрацьоване"
+                        : "Повернено"}
+                  </Badge>
                 </div>
               </div>
             ))}
@@ -165,17 +168,17 @@ export function ProjectDashboardDetailView({
 
       {activeTab === "documents" && (
         <Card className="overflow-hidden">
-         <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
-  <h2 className="font-semibold">Документи проєкту</h2>
+          <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
+            <h2 className="font-semibold">Документи проєкту</h2>
 
-  {createCommentAction && (
-    <AddCommentButton
-      projectId={project.id}
-      documents={documents}
-      createCommentAction={createCommentAction}
-    />
-  )}
-</div>
+            {createCommentAction && (
+              <AddCommentButton
+                projectId={project.id}
+                documents={documents}
+                createCommentAction={createCommentAction}
+              />
+            )}
+          </div>
 
           <div>
             {documents.map((document) => (
@@ -191,27 +194,27 @@ export function ProjectDashboardDetailView({
                   </div>
                 </div>
 
-<Badge
-  variant={
-    document.status === "approved"
-      ? "success"
-      : document.status === "submitted"
-        ? "info"
-        : document.status === "rejected"
-          ? "danger"
-          : "warning"
-  }
->
-  {document.status === "draft"
-    ? "Чернетка"
-    : document.status === "submitted"
-      ? "На перевірці"
-      : document.status === "approved"
-        ? "Готово"
-        : document.status === "rejected"
-          ? "Відхилено"
-          : "Архів"}
-</Badge>
+                <Badge
+                  variant={
+                    document.status === "approved"
+                      ? "success"
+                      : document.status === "submitted"
+                        ? "info"
+                        : document.status === "rejected"
+                          ? "danger"
+                          : "warning"
+                  }
+                >
+                  {document.status === "draft"
+                    ? "Чернетка"
+                    : document.status === "submitted"
+                      ? "На перевірці"
+                      : document.status === "approved"
+                        ? "Готово"
+                        : document.status === "rejected"
+                          ? "Відхилено"
+                          : "Архів"}
+                </Badge>
               </div>
             ))}
           </div>
