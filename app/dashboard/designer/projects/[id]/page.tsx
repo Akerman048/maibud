@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 
-import { getProjectById } from "@/lib/projects";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProjectDashboardDetailView } from "@/components/projects/ProjectDashboardDetailView";
-import { getDocumentsByProjectId } from "@/lib/documents";
+import { getProjectAuditLogs } from "@/lib/audit";
 import { getCommentsByProjectId } from "@/lib/comments";
+import { getDocumentsByProjectId } from "@/lib/documents";
+import { getProjectById } from "@/lib/projects";
 
 type PageProps = {
   params: Promise<{
@@ -17,11 +18,12 @@ export default async function DesignerProjectDetailPage({
 }: PageProps) {
   const { id } = await params;
 
-const [project, documents, comments] = await Promise.all([
-  getProjectById(id),
-  getDocumentsByProjectId(id),
-  getCommentsByProjectId(id),
-]);
+  const [project, documents, comments, auditLogs] = await Promise.all([
+    getProjectById(id),
+    getDocumentsByProjectId(id),
+    getCommentsByProjectId(id),
+    getProjectAuditLogs(id),
+  ]);
 
   if (!project) {
     notFound();
@@ -33,6 +35,7 @@ const [project, documents, comments] = await Promise.all([
         project={project}
         documents={documents}
         comments={comments}
+        auditLogs={auditLogs}
         backHref="/dashboard/designer"
       />
     </DashboardLayout>

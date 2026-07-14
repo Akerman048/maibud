@@ -16,9 +16,9 @@ export default async function DesignerCommentsPage() {
         />
 
         <CommentsView
-  comments={comments}
-  resolveCommentAction={resolveComment}
-/>
+          comments={comments}
+          resolveCommentAction={resolveComment}
+        />
       </div>
     </DashboardLayout>
   );

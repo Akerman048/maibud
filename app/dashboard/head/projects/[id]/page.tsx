@@ -5,6 +5,7 @@ import { ProjectDashboardDetailView } from "@/components/projects/ProjectDashboa
 import { getDocumentsByProjectId } from "@/lib/documents";
 import { getProjectById } from "@/lib/projects";
 import { getCommentsByProjectId } from "@/lib/comments";
+import { getProjectAuditLogs } from "@/lib/audit";
 
 type PageProps = {
   params: Promise<{
@@ -15,11 +16,12 @@ type PageProps = {
 export default async function HeadProjectDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-const [project, documents, comments] = await Promise.all([
-  getProjectById(id),
-  getDocumentsByProjectId(id),
-  getCommentsByProjectId(id),
-]);
+  const [project, documents, comments, auditLogs] = await Promise.all([
+    getProjectById(id),
+    getDocumentsByProjectId(id),
+    getCommentsByProjectId(id),
+    getProjectAuditLogs(id),
+  ]);
 
   if (!project) {
     notFound();
@@ -28,11 +30,12 @@ const [project, documents, comments] = await Promise.all([
   return (
     <DashboardLayout role="head">
       <ProjectDashboardDetailView
-  project={project}
-  documents={documents}
-  comments={comments}
-  backHref="/dashboard/head"
-/>
+        project={project}
+        documents={documents}
+        comments={comments}
+        auditLogs={auditLogs}
+        backHref="/dashboard/head"
+      />
     </DashboardLayout>
   );
 }

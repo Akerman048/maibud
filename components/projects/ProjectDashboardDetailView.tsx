@@ -13,12 +13,13 @@ import { AddCommentButton } from "@/components/comments/AddCommentButton";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ProjectInfoGrid } from "@/components/projects/ProjectInfoGrid";
-import { ProjectTimeline } from "@/components/projects/ProjectTimeline";
+import type { AuditLogItem } from "@/types/audit";
 
 type ProjectDashboardDetailViewProps = {
   project: Project;
   documents: DocumentItem[];
   comments: CommentItem[];
+  auditLogs?: AuditLogItem[];
   backHref: string;
   createCommentAction?: (formData: FormData) => Promise<void>;
 };
@@ -51,6 +52,7 @@ export function ProjectDashboardDetailView({
   project,
   documents,
   comments,
+  auditLogs = [],
   backHref,
   createCommentAction,
 }: ProjectDashboardDetailViewProps) {
@@ -90,7 +92,7 @@ export function ProjectDashboardDetailView({
               key={tab.value}
               type="button"
               onClick={() => {
-                console.log("tab clicked", tab.value);
+               
                 setActiveTab(tab.value);
               }}
               className={`relative shrink-0 px-4 py-3 text-sm font-semibold transition ${
@@ -115,11 +117,36 @@ export function ProjectDashboardDetailView({
             <ProjectInfoGrid project={project} />
           </Card>
 
-          <Card className="p-6">
-            <h2 className="mb-5 text-lg font-semibold">Останні оновлення</h2>
+<Card className="p-6">
+  <h2 className="mb-5 text-lg font-semibold">Останні оновлення</h2>
 
-            <ProjectTimeline />
-          </Card>
+  {auditLogs.length === 0 ? (
+    <p className="text-sm text-[var(--color-text-secondary)]">
+      Подій поки немає.
+    </p>
+  ) : (
+    <div className="flex flex-col">
+      {auditLogs.slice(0, 3).map((log) => (
+        <div
+          key={log.id}
+          className="border-b border-[var(--color-border)] py-4 last:border-b-0"
+        >
+          <div className="font-semibold">{log.action}</div>
+
+          {log.documentTitle && (
+            <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              Документ: {log.documentTitle}
+            </div>
+          )}
+
+          <div className="mt-1 text-sm text-[var(--color-text-muted)]">
+            {log.userName ?? "Система"} · {log.createdAt}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</Card>
         </div>
       )}
 
@@ -225,7 +252,73 @@ export function ProjectDashboardDetailView({
         <Card className="p-6">
           <h2 className="mb-5 text-lg font-semibold">Журнал подій</h2>
 
-          <ProjectTimeline />
+          {auditLogs.length === 0 ? (
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Подій поки немає.
+            </p>
+          ) : (
+            <div className="flex flex-col">
+              {auditLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="border-b border-[var(--color-border)] py-5 last:border-b-0"
+                >
+                  <div className="font-semibold">
+                    {log.userName ? `${log.userName}: ` : ""}
+                    {log.action}
+                  </div>
+
+                  {log.documentTitle && (
+                    <div className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                      Документ: {log.documentTitle}
+                    </div>
+                  )}
+
+                  {log.commentText && (
+                    <p className="mt-2 line-clamp-2 text-sm text-[var(--color-text-secondary)]">
+                      «{log.commentText}»
+                    </p>
+                  )}
+
+                  <div className="mt-3 flex items-center justify-between gap-4">
+                    <span className="text-sm text-[var(--color-text-muted)]">
+                      {log.createdAt}
+                    </span>
+
+                    {log.entityType === "COMMENT" && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("remarks")}
+                        className="text-sm font-semibold text-[var(--color-accent)] hover:underline"
+                      >
+                        Перейти до зауважень
+                      </button>
+                    )}
+
+                    {log.entityType === "DOCUMENT" && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("documents")}
+                        className="text-sm font-semibold text-[var(--color-accent)] hover:underline"
+                      >
+                        Відкрити документи
+                      </button>
+                    )}
+
+                    {log.entityType === "PROJECT" && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("overview")}
+                        className="text-sm font-semibold text-[var(--color-accent)] hover:underline"
+                      >
+                        Відкрити огляд
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       )}
     </div>

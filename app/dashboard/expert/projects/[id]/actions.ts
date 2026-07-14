@@ -24,12 +24,24 @@ export async function createComment(formData: FormData) {
     throw new Error("Expert not found");
   }
 
-  await prisma.comment.create({
-    data: {
-      documentId,
-      content,
-      authorId: expert.id,
-    },
+  await prisma.$transaction(async (tx) => {
+    const comment = await tx.comment.create({
+      data: {
+        documentId,
+        content,
+        authorId: expert.id,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        action: "Додано зауваження до документа",
+        entityType: "COMMENT",
+        entityId: comment.id,
+        userId: expert.id,
+        projectId,
+      },
+    });
   });
 
   revalidatePath(`/dashboard/expert/projects/${projectId}`);

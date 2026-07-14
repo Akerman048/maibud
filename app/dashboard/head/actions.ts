@@ -1,3 +1,4 @@
+
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -17,6 +18,12 @@ export async function createProject(formData: FormData) {
     throw new Error("Заповніть усі поля");
   }
 
+  const deadline = new Date(deadlineValue);
+
+  if (Number.isNaN(deadline.getTime())) {
+    throw new Error("Некоректна дата завершення");
+  }
+
   const organization = await prisma.organization.findFirst();
 
   if (!organization) {
@@ -33,9 +40,10 @@ export async function createProject(formData: FormData) {
     throw new Error("Head user not found");
   }
 
-  const expert = await prisma.user.findUnique({
+  const expert = await prisma.user.findFirst({
     where: {
       id: expertId,
+      role: UserRole.EXPERT,
     },
   });
 
@@ -43,33 +51,45 @@ export async function createProject(formData: FormData) {
     throw new Error("Expert not found");
   }
 
-  await prisma.project.create({
-    data: {
-      name,
-      address,
-      customer,
-      stage,
-      status: ProjectStatus.OPEN,
-      deadline: new Date(deadlineValue),
-      organizationId: organization.id,
-      members: {
-        create: [
-          {
-            userId: head.id,
-            role: UserRole.HEAD,
-          },
-          {
-            userId: expert.id,
-            role: UserRole.EXPERT,
-          },
-        ],
+  await prisma.$transaction(async (tx) => {
+    const createdProject = await tx.project.create({
+      data: {
+        name,
+        address,
+        customer,
+        stage,
+        status: ProjectStatus.OPEN,
+        deadline,
+        organizationId: organization.id,
+        members: {
+          create: [
+            {
+              userId: head.id,
+              role: UserRole.HEAD,
+            },
+            {
+              userId: expert.id,
+              role: UserRole.EXPERT,
+            },
+          ],
+        },
       },
-    },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        action: "Створено проєкт",
+        entityType: "PROJECT",
+        entityId: createdProject.id,
+        userId: head.id,
+        projectId: createdProject.id,
+      },
+    });
   });
 
   revalidatePath("/dashboard/head");
+  revalidatePath("/dashboard/head/projects");
 }
-
 
 export async function updateProject(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
@@ -90,6 +110,22 @@ export async function updateProject(formData: FormData) {
     !deadlineValue
   ) {
     throw new Error("Заповніть усі поля");
+  }
+
+  const deadline = new Date(deadlineValue);
+
+  if (Number.isNaN(deadline.getTime())) {
+    throw new Error("Некоректна дата завершення");
+  }
+
+  const head = await prisma.user.findFirst({
+    where: {
+      role: UserRole.HEAD,
+    },
+  });
+
+  if (!head) {
+    throw new Error("Head user not found");
   }
 
   const expert = await prisma.user.findFirst({
@@ -123,7 +159,7 @@ export async function updateProject(formData: FormData) {
         address,
         customer,
         stage,
-        deadline: new Date(deadlineValue),
+        deadline,
       },
     });
 
@@ -141,12 +177,22 @@ export async function updateProject(formData: FormData) {
         role: UserRole.EXPERT,
       },
     });
+
+    await tx.auditLog.create({
+      data: {
+        action: "Оновлено дані проєкту",
+        entityType: "PROJECT",
+        entityId: id,
+        userId: head.id,
+        projectId: id,
+      },
+    });
   });
 
   revalidatePath("/dashboard/head");
+  revalidatePath("/dashboard/head/projects");
   revalidatePath(`/dashboard/head/projects/${id}`);
 }
-
 
 export async function archiveProject(projectId: string) {
   if (!projectId) {
@@ -163,15 +209,39 @@ export async function archiveProject(projectId: string) {
     throw new Error("Project not found");
   }
 
-  await prisma.project.update({
+  const head = await prisma.user.findFirst({
     where: {
-      id: projectId,
-    },
-    data: {
-      status: ProjectStatus.ARCHIVED,
+      role: UserRole.HEAD,
     },
   });
 
+  if (!head) {
+    throw new Error("Head user not found");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.project.update({
+      where: {
+        id: projectId,
+      },
+      data: {
+        status: ProjectStatus.ARCHIVED,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        action: "Проєкт переміщено в архів",
+        entityType: "PROJECT",
+        entityId: projectId,
+        userId: head.id,
+        projectId,
+      },
+    });
+  });
+
   revalidatePath("/dashboard/head");
+  revalidatePath("/dashboard/head/projects");
+  revalidatePath(`/dashboard/head/projects/${projectId}`);
   revalidatePath("/dashboard/head/archive");
 }
