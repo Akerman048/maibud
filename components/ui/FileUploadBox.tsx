@@ -1,71 +1,93 @@
 "use client";
 
-import { useState } from "react";
-import { FiFileText, FiUploadCloud, FiX } from "react-icons/fi";
+import { useRef, useState } from "react";
+import { FiUploadCloud, FiX } from "react-icons/fi";
 
 type FileUploadBoxProps = {
-  name?: string;
-  accept?: string;
+  file: File | null;
+  onFileChange: (file: File | null) => void;
+  disabled?: boolean;
 };
 
 export function FileUploadBox({
-  name = "file",
-  accept = ".pdf,.doc,.docx,.dwg",
+  file,
+  onFileChange,
+  disabled = false,
 }: FileUploadBoxProps) {
-  const [fileName, setFileName] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  function selectFile(selectedFile: File | undefined) {
+    if (!selectedFile) return;
+    onFileChange(selectedFile);
+  }
 
   return (
-    <div className="flex flex-col gap-3">
-      <label className="flex cursor-pointer flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border-strong)] bg-slate-50 p-8 text-center hover:bg-slate-100">
-        <FiUploadCloud className="mb-3 size-8 text-[var(--color-text-muted)]" />
+    <div
+      onDragOver={(event) => {
+        event.preventDefault();
+        if (!disabled) setIsDragging(true);
+      }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={(event) => {
+        event.preventDefault();
+        setIsDragging(false);
 
-        <span className="text-sm text-[var(--color-text-secondary)]">
-          Перетягніть файл або{" "}
-          <span className="font-semibold text-[var(--color-accent)]">
-            оберіть на компʼютері
-          </span>
-        </span>
+        if (!disabled) {
+          selectFile(event.dataTransfer.files[0]);
+        }
+      }}
+      className={`rounded-[var(--radius-lg)] border-2 border-dashed p-6 text-center transition ${
+        isDragging
+          ? "border-[var(--color-accent)] bg-blue-50"
+          : "border-[var(--color-border)]"
+      }`}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        disabled={disabled}
+        accept=".pdf,.doc,.docx,.xlsx,.png,.jpg,.jpeg,.dwg"
+        onChange={(event) => selectFile(event.target.files?.[0])}
+      />
 
-        <span className="mt-1 text-xs text-[var(--color-text-muted)]">
-          PDF, DOC, DWG — до 25 МБ
-        </span>
+      {file ? (
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 text-left">
+            <div className="truncate font-semibold">{file.name}</div>
 
-        <input
-          name={name}
-          type="file"
-          accept={accept}
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            setFileName(file?.name ?? "");
-          }}
-        />
-      </label>
-
-      {fileName && (
-        <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-3">
-          <div className="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-red-50 text-red-600">
-            <FiFileText className="size-4" />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold">
-              {fileName}
-            </div>
-
-            <div className="text-xs text-[var(--color-text-muted)]">
-              Файл вибрано
+            <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              {(file.size / 1024 / 1024).toFixed(2)} MB
             </div>
           </div>
 
           <button
             type="button"
-            onClick={() => setFileName("")}
-            className="rounded-md p-1 text-[var(--color-text-muted)] hover:bg-slate-100 hover:text-slate-600"
+            disabled={disabled}
+            onClick={() => onFileChange(null)}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full hover:bg-slate-100"
           >
             <FiX className="size-4" />
           </button>
         </div>
+      ) : (
+        <>
+          <FiUploadCloud className="mx-auto size-8 text-[var(--color-accent)]" />
+
+          <p className="mt-3 font-semibold">
+            Перетягніть файл сюди або оберіть вручну
+          </p>
+
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => inputRef.current?.click()}
+            className="mt-3 text-sm font-semibold text-[var(--color-accent)] hover:underline"
+          >
+            Обрати файл
+          </button>
+        </>
       )}
     </div>
   );

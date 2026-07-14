@@ -1,5 +1,3 @@
-import { createDocument } from "./actions";
-
 import { DocumentsView } from "@/components/documents/DocumentsView";
 import { UploadDocumentButton } from "@/components/documents/UploadDocumentButton";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -17,12 +15,7 @@ export default async function DesignerDocumentsPage() {
         <Header
           title="Документи"
           subtitle="Завантажені файли проєктів"
-          action={
-            <UploadDocumentButton
-              projects={projects}
-              createDocumentAction={createDocument}
-            />
-          }
+          action={<UploadDocumentButton projects={projects} />}
         />
 
         <DocumentsView documents={documents} />

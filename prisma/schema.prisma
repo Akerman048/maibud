@@ -112,21 +112,25 @@ model Document {
 }
 
 model DocumentVersion {
-  id       String @id @default(cuid())
-  version  Int
-  fileUrl  String
-  fileName String
-  fileSize Int?
+  id      String @id @default(cuid())
+  version Int
+
+  objectKey String  @unique
+  fileName  String
+  mimeType  String
+  fileSize  Int
+  checksum  String?
 
   documentId String
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   createdById String
-  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
 
   @@unique([documentId, version])
+  @@index([documentId, createdAt])
 }
 
 model Comment {

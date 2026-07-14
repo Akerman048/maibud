@@ -10,19 +10,12 @@ import { Toast } from "@/components/ui/Toast";
 
 type UploadDocumentButtonProps = {
   projects: ProjectOption[];
-  createDocumentAction: (formData: FormData) => Promise<void>;
 };
 
-export function UploadDocumentButton({
-  projects,
-  createDocumentAction,
-}: UploadDocumentButtonProps) {
+export function UploadDocumentButton({ projects }: UploadDocumentButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
-  function handleUploaded() {
-    setToastMessage("Документ додано.");
-  }
 
   return (
     <>
@@ -34,9 +27,8 @@ export function UploadDocumentButton({
       {isOpen && (
         <UploadDocumentModal
           projects={projects}
-          createDocumentAction={createDocumentAction}
           onClose={() => setIsOpen(false)}
-          onUploaded={handleUploaded}
+          onUploaded={() => setToastMessage("Документ успішно завантажено.")}
         />
       )}
 
