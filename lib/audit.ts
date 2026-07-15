@@ -83,6 +83,37 @@ export async function getProjectAuditLogs(
         documentTitle = comment?.document.title ?? null;
       }
 
+      if (log.entityType === "COMMENT_THREAD") {
+        const thread = await prisma.commentThread.findUnique({
+          where: { id: log.entityId },
+          select: {
+            title: true,
+            document: { select: { title: true } },
+          },
+        });
+
+        commentText = thread?.title ?? null;
+        documentTitle = thread?.document.title ?? null;
+      }
+
+      if (log.entityType === "COMMENT_MESSAGE") {
+        const message = await prisma.commentMessage.findUnique({
+          where: { id: log.entityId },
+          select: {
+            deletedAt: true,
+            content: true,
+            thread: {
+              select: {
+                document: { select: { title: true } },
+              },
+            },
+          },
+        });
+
+        commentText = message?.deletedAt ? null : message?.content ?? null;
+        documentTitle = message?.thread.document.title ?? null;
+      }
+
       return {
         id: log.id,
         action: log.action,

@@ -3,6 +3,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hash } from "bcryptjs";
 import {
+  CommentThreadStatus,
   PrismaClient,
   ProjectStatus,
   UserRole,
@@ -19,6 +20,8 @@ const prisma = new PrismaClient({
 async function main() {
   const demoPasswordHash = await hash("Demo1234!", 12);
 
+  await prisma.commentMessage.deleteMany();
+  await prisma.commentThread.deleteMany();
   await prisma.comment.deleteMany();
   await prisma.documentVersion.deleteMany();
   await prisma.document.deleteMany();
@@ -163,6 +166,32 @@ await prisma.comment.createMany({
       authorId: expert.id,
     },
   ],
+});
+
+await prisma.commentThread.create({
+  data: {
+    title: "Уточнення схеми підключення",
+    section: "Зовнішні мережі",
+    status: CommentThreadStatus.OPEN,
+    documentId: document1.id,
+    createdById: expert.id,
+    messages: {
+      create: [
+        {
+          authorId: expert.id,
+          content: "Уточніть точку підключення до зовнішньої мережі.",
+        },
+        {
+          authorId: designer.id,
+          content: "Схему перевіряємо, додамо позначення у наступній версії.",
+        },
+        {
+          authorId: expert.id,
+          content: "Додайте також посилання на технічні умови.",
+        },
+      ],
+    },
+  },
 });
 
   for (const project of projects) {

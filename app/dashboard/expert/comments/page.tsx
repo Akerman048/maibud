@@ -1,11 +1,16 @@
-import { CommentsView } from "@/components/comments/CommentsView";
+import { UserRole } from "@/app/generated/prisma/client";
+import { CommentThreadsView } from "@/components/comments/CommentThreadsView";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
-import { getComments } from "@/lib/comments";
-import { returnComment } from "./actions";
+import { requireRole } from "@/lib/auth-guard";
+import { getCommentThreadsForUser } from "@/lib/comment-threads";
 
 export default async function ExpertCommentsPage() {
-  const comments = await getComments();
+  const currentUser = await requireRole([UserRole.EXPERT]);
+  const threads = await getCommentThreadsForUser(
+    currentUser.id,
+    currentUser.role,
+  );
 
   return (
     <DashboardLayout>
@@ -15,7 +20,10 @@ export default async function ExpertCommentsPage() {
           subtitle="Зауваження до проєктної документації"
         />
 
-        <CommentsView comments={comments} returnCommentAction={returnComment} />
+        <CommentThreadsView
+          threads={threads}
+          detailBaseHref="/dashboard/expert/comments"
+        />
       </div>
     </DashboardLayout>
   );

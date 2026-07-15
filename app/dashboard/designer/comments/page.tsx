@@ -1,11 +1,16 @@
-import { CommentsView } from "@/components/comments/CommentsView";
+import { UserRole } from "@/app/generated/prisma/client";
+import { CommentThreadsView } from "@/components/comments/CommentThreadsView";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
-import { getComments } from "@/lib/comments";
-import { resolveComment } from "./actions";
+import { requireRole } from "@/lib/auth-guard";
+import { getCommentThreadsForUser } from "@/lib/comment-threads";
 
 export default async function DesignerCommentsPage() {
-  const comments = await getComments();
+  const currentUser = await requireRole([UserRole.DESIGNER]);
+  const threads = await getCommentThreadsForUser(
+    currentUser.id,
+    currentUser.role,
+  );
 
   return (
     <DashboardLayout>
@@ -15,9 +20,9 @@ export default async function DesignerCommentsPage() {
           subtitle="Зауваження експертів до ваших документів"
         />
 
-        <CommentsView
-          comments={comments}
-          resolveCommentAction={resolveComment}
+        <CommentThreadsView
+          threads={threads}
+          detailBaseHref="/dashboard/designer/comments"
         />
       </div>
     </DashboardLayout>
