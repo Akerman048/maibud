@@ -11,7 +11,6 @@ import {
   resendInvitation,
   revokeInvitation,
   updateOrganizationMemberRole,
-  type OrganizationActionState,
 } from "@/app/dashboard/head/members/actions";
 import type { UserRole } from "@/app/generated/prisma/client";
 import { Badge } from "@/components/ui/Badge";
@@ -22,6 +21,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Tabs } from "@/components/ui/Tabs";
 import { getUserRoleLabel } from "@/lib/user-role";
+import type { OrganizationActionState } from "@/types/organization";
 
 type ProjectOption = { id: string; name: string };
 type Member = {

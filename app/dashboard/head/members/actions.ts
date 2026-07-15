@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import {
   Prisma,
-  type UserRole,
+  UserRole,
 } from "@/app/generated/prisma/client";
 import { AuthorizationError } from "@/lib/auth-guard";
 import {
@@ -19,28 +19,23 @@ import {
 } from "@/lib/membership-policy";
 import { requireHeadOfOrganization } from "@/lib/organization-access";
 import { prisma } from "@/lib/prisma";
-
-export type OrganizationActionState = {
-  error: string;
-  success: boolean;
-  inviteUrl?: string;
-};
+import type { OrganizationActionState } from "@/types/organization";
 
 class OrganizationActionError extends Error {}
 
 const idSchema = z.string().trim().min(1, "Не вказано ідентифікатор.");
 const invitationRoleSchema = z.enum([
-  "EXPERT",
-  "DESIGNER",
-  "ARCHIVIST",
-  "CLIENT",
+  UserRole.EXPERT,
+  UserRole.DESIGNER,
+  UserRole.ARCHIVIST,
+  UserRole.CLIENT,
 ]);
 const memberRoleSchema = z.enum([
-  "HEAD",
-  "EXPERT",
-  "DESIGNER",
-  "ARCHIVIST",
-  "CLIENT",
+  UserRole.HEAD,
+  UserRole.EXPERT,
+  UserRole.DESIGNER,
+  UserRole.ARCHIVIST,
+  UserRole.CLIENT,
 ]);
 const createInvitationSchema = z.object({
   organizationId: idSchema,
@@ -750,5 +745,3 @@ export async function updateOrganizationMemberRole(
     return stateFromError(error);
   }
 }
-
-export type { UserRole };
