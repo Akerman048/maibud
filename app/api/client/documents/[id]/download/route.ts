@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { UserRole } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
 import { requireRole } from "@/lib/auth-guard";
+import { isDocumentVisibleToClient } from "@/lib/document-workflow";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
 
@@ -39,6 +40,8 @@ export async function GET(
         },
       },
       select: {
+        status: true,
+        isPublishedToClient: true,
         versions: {
           orderBy: {
             version: "desc",
@@ -53,7 +56,10 @@ export async function GET(
       },
     });
 
-    const latestVersion = document?.versions[0];
+    const latestVersion =
+      document && isDocumentVisibleToClient(document)
+        ? document.versions[0]
+        : undefined;
 
     if (!latestVersion) {
       return NextResponse.json(

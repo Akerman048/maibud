@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { UserRole } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
 import { requireRole } from "@/lib/auth-guard";
+import { canUploadDocumentVersion } from "@/lib/document-workflow";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
 
@@ -161,7 +162,7 @@ export async function POST(
       );
     }
 
-    if (document.status === "ARCHIVED") {
+    if (!canUploadDocumentVersion(document.status)) {
       return NextResponse.json(
         {
           error: "Archived documents cannot be changed",

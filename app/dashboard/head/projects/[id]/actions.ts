@@ -7,6 +7,7 @@ import {
   AuthorizationError,
   requireRole,
 } from "@/lib/auth-guard";
+import { canPublishDocument } from "@/lib/document-workflow";
 import { prisma } from "@/lib/prisma";
 
 export type DocumentPublicationActionState = {
@@ -120,7 +121,7 @@ export async function publishDocumentToClient(
       currentUser.role,
     );
 
-    if (document.status !== "APPROVED") {
+    if (!canPublishDocument(document.status)) {
       throw new DocumentPublicationError(
         "Для клієнта можна опублікувати лише погоджений документ.",
       );
