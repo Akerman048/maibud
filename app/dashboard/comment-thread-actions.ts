@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   CommentThreadStatus,
   DocumentStatus,
+  NotificationType,
   UserRole,
 } from "@/app/generated/prisma/client";
 import {
@@ -18,6 +19,12 @@ import {
   canReplyToCommentThread,
   canReturnCommentThread,
 } from "@/lib/comment-thread-policy";
+import { getNotificationHref } from "@/lib/notification-policy";
+import {
+  getDesignerMemberUserIds,
+  getProjectMembers,
+} from "@/lib/notification-recipients";
+import { createNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import type { CommentThreadActionState } from "@/types/comment-thread";
 
@@ -147,10 +154,14 @@ async function getThreadForMember(
     select: {
       id: true,
       status: true,
+      createdById: true,
       document: {
         select: {
+          id: true,
           status: true,
           projectId: true,
+          title: true,
+          authorId: true,
         },
       },
     },
@@ -200,6 +211,8 @@ export async function createCommentThread(
       },
       select: {
         id: true,
+        title: true,
+        authorId: true,
         versions: input.documentVersionId
           ? {
               where: { id: input.documentVersionId },
@@ -250,10 +263,32 @@ export async function createCommentThread(
         },
       });
 
+      const designerUserIds = await getDesignerMemberUserIds(
+        tx,
+        input.projectId,
+      );
+      await createNotifications(
+        tx,
+        [document.authorId, ...designerUserIds].map((userId) => ({
+          userId,
+          actorId: currentUser.id,
+          type: NotificationType.COMMENT_THREAD_CREATED,
+          title: "Нове зауваження до документа",
+          message: `Експерт створив зауваження до документа «${document.title}».`,
+          href: getNotificationHref({
+            destination: "COMMENT_THREAD",
+            role: UserRole.DESIGNER,
+            commentThreadId: createdThread.id,
+          }),
+          projectId: input.projectId,
+          documentId: document.id,
+          commentThreadId: createdThread.id,
+        })),
+      );
+
       return createdThread;
     });
 
-    // TODO(notifications): queue a thread-created notification after commit.
     revalidateCommentThreads(input.projectId, thread.id);
 
     return { error: "", success: true, threadId: thread.id };
@@ -315,10 +350,48 @@ export async function replyToCommentThread(
         },
       });
 
+      const [projectMembers, participantMessages] = await Promise.all([
+        getProjectMembers(tx, thread.document.projectId, [
+          UserRole.EXPERT,
+          UserRole.DESIGNER,
+        ]),
+        tx.commentMessage.findMany({
+          where: {
+            threadId: thread.id,
+            author: { isActive: true },
+          },
+          select: { authorId: true },
+        }),
+      ]);
+      const participantIds = new Set([
+        thread.createdById,
+        thread.document.authorId,
+        ...participantMessages.map(({ authorId }) => authorId),
+      ]);
+      await createNotifications(
+        tx,
+        projectMembers
+          .filter(({ userId }) => participantIds.has(userId))
+          .map(({ userId, role }) => ({
+            userId,
+            actorId: currentUser.id,
+            type: NotificationType.COMMENT_REPLY_CREATED,
+            title: "Нова відповідь у зауваженні",
+            message: `У зауваженні до документа «${thread.document.title}» з’явилася нова відповідь.`,
+            href: getNotificationHref({
+              destination: "COMMENT_THREAD",
+              role,
+              commentThreadId: thread.id,
+            }),
+            projectId: thread.document.projectId,
+            documentId: thread.document.id,
+            commentThreadId: thread.id,
+          })),
+      );
+
       return createdMessage;
     });
 
-    // TODO(notifications): queue a thread-reply notification after commit.
     revalidateCommentThreads(thread.document.projectId, thread.id);
 
     return { error: "", success: true, threadId: thread.id };
@@ -379,6 +452,30 @@ export async function markCommentThreadResolved(
           projectId: thread.document.projectId,
         },
       });
+
+      const expertMembers = await getProjectMembers(
+        tx,
+        thread.document.projectId,
+        [UserRole.EXPERT],
+      );
+      await createNotifications(
+        tx,
+        expertMembers.map(({ userId, role }) => ({
+          userId,
+          actorId: currentUser.id,
+          type: NotificationType.COMMENT_THREAD_RESOLVED,
+          title: "Зауваження позначено виконаним",
+          message: `Дизайнер позначив зауваження до документа «${thread.document.title}» виконаним.`,
+          href: getNotificationHref({
+            destination: "COMMENT_THREAD",
+            role,
+            commentThreadId: thread.id,
+          }),
+          projectId: thread.document.projectId,
+          documentId: thread.document.id,
+          commentThreadId: thread.id,
+        })),
+      );
     });
 
     revalidateCommentThreads(thread.document.projectId, thread.id);
@@ -451,9 +548,32 @@ export async function returnCommentThread(
           projectId: thread.document.projectId,
         },
       });
+
+      const designerMembers = await getProjectMembers(
+        tx,
+        thread.document.projectId,
+        [UserRole.DESIGNER],
+      );
+      await createNotifications(
+        tx,
+        designerMembers.map(({ userId, role }) => ({
+          userId,
+          actorId: currentUser.id,
+          type: NotificationType.COMMENT_THREAD_RETURNED,
+          title: "Зауваження повернено",
+          message: `Експерт повернув зауваження до документа «${thread.document.title}» на доопрацювання.`,
+          href: getNotificationHref({
+            destination: "COMMENT_THREAD",
+            role,
+            commentThreadId: thread.id,
+          }),
+          projectId: thread.document.projectId,
+          documentId: thread.document.id,
+          commentThreadId: thread.id,
+        })),
+      );
     });
 
-    // TODO(notifications): queue a thread-returned notification after commit.
     revalidateCommentThreads(thread.document.projectId, thread.id);
     return { error: "", success: true, threadId: thread.id };
   } catch (error) {

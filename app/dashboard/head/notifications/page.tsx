@@ -1,14 +1,19 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Header } from "@/components/layout/Header";
-import { NotificationsView } from "@/components/notifications/NotificationsView";
+import { UserRole } from "@/app/generated/prisma/client";
+import { NotificationsPageContent } from "@/components/notifications/NotificationsPageContent";
+import { requireRole } from "@/lib/auth-guard";
 
-export default function HeadNotificationsPage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function HeadNotificationsPage({ searchParams }: PageProps) {
+  const currentUser = await requireRole([UserRole.HEAD]);
+
   return (
-    <DashboardLayout>
-      <div className="flex flex-col gap-[22px]">
-        <Header title="Сповіщення" subtitle="3 нові події" />
-        <NotificationsView />
-      </div>
-    </DashboardLayout>
+    <NotificationsPageContent
+      userId={currentUser.id}
+      role={currentUser.role}
+      searchParams={await searchParams}
+    />
   );
 }

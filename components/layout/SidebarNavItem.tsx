@@ -8,7 +8,7 @@ type SidebarNavItemProps = {
   label: string;
   href: string;
   icon: IconType;
-  badge?: number;
+  badge?: number | string;
 };
 
 export function SidebarNavItem({

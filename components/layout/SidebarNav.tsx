@@ -15,6 +15,7 @@ import { SidebarNavItem } from "./SidebarNavItem";
 
 type SidebarNavProps = {
   role: DashboardRole;
+  unreadNotificationCount: number;
 };
 
 const navByRole = {
@@ -27,7 +28,6 @@ const navByRole = {
       label: "Сповіщення",
       href: "/dashboard/head/notifications",
       icon: FiBell,
-      badge: 3,
     },
     { label: "Налаштування", href: "/dashboard/head/settings", icon: FiSettings },
   ],
@@ -41,6 +41,7 @@ const navByRole = {
       badge: 6,
     },
     { label: "Документи", href: "/dashboard/expert/documents", icon: FiFileText },
+    { label: "Сповіщення", href: "/dashboard/expert/notifications", icon: FiBell },
     { label: "Налаштування", href: "/dashboard/expert/settings", icon: FiSettings },
   ],
 
@@ -53,6 +54,7 @@ const navByRole = {
       badge: 8,
     },
     { label: "Документи", href: "/dashboard/designer/documents", icon: FiFileText },
+    { label: "Сповіщення", href: "/dashboard/designer/notifications", icon: FiBell },
     {
       label: "Архів",
       href: "/dashboard/designer/archive",
@@ -69,17 +71,17 @@ const navByRole = {
       label: "Сповіщення",
       href: "/dashboard/archivist/notifications",
       icon: FiBell,
-      badge: 4,
     },
     { label: "Налаштування", href: "/dashboard/archivist/settings", icon: FiSettings },
   ],
 
   client: [
     { label: "Мої проєкти", href: "/dashboard/client", icon: FiBriefcase },
+    { label: "Сповіщення", href: "/dashboard/client/notifications", icon: FiBell },
   ],
 };
 
-export function SidebarNav({ role }: SidebarNavProps) {
+export function SidebarNav({ role, unreadNotificationCount }: SidebarNavProps) {
   const navItems = navByRole[role];
 
   return (
@@ -90,7 +92,17 @@ export function SidebarNav({ role }: SidebarNavProps) {
           label={item.label}
           href={item.href}
           icon={item.icon}
-          badge={"badge" in item ? item.badge : undefined}
+          badge={
+            item.label === "Сповіщення"
+              ? unreadNotificationCount > 0
+                ? unreadNotificationCount > 99
+                  ? "99+"
+                  : unreadNotificationCount
+                : undefined
+              : "badge" in item
+                ? item.badge
+                : undefined
+          }
         />
       ))}
     </div>

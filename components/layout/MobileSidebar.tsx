@@ -9,6 +9,7 @@ import type { UserRole } from "@/app/generated/prisma/client";
 
 type MobileSidebarProps = {
   role: DashboardRole;
+  unreadNotificationCount: number;
   user: {
     name?: string | null;
     email?: string | null;
@@ -16,7 +17,11 @@ type MobileSidebarProps = {
   };
 };
 
-export function MobileSidebar({ role, user }: MobileSidebarProps) {
+export function MobileSidebar({
+  role,
+  user,
+  unreadNotificationCount,
+}: MobileSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -46,7 +51,11 @@ export function MobileSidebar({ role, user }: MobileSidebarProps) {
               <FiX className="size-5" />
             </button>
 
-            <Sidebar role={role} user={user} />
+            <Sidebar
+              role={role}
+              user={user}
+              unreadNotificationCount={unreadNotificationCount}
+            />
           </div>
         </div>
       )}

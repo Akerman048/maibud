@@ -14,6 +14,7 @@ export type DashboardRole =
 
 type SidebarProps = {
   role: DashboardRole;
+  unreadNotificationCount: number;
   user: {
     name?: string | null;
     email?: string | null;
@@ -46,7 +47,7 @@ function getInitials(name: string | null | undefined) {
     .join("");
 }
 
-export function Sidebar({ role, user }: SidebarProps) {
+export function Sidebar({ role, user, unreadNotificationCount }: SidebarProps) {
   const initials = getInitials(user.name);
 
   return (
@@ -59,7 +60,10 @@ export function Sidebar({ role, user }: SidebarProps) {
         <span className="text-[17px] font-bold text-white">ExpertDesk</span>
       </div>
 
-      <SidebarNav role={role} />
+      <SidebarNav
+        role={role}
+        unreadNotificationCount={unreadNotificationCount}
+      />
 
       <div className="flex items-center gap-2.5 rounded-[10px] bg-white/5 p-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-slate-200">

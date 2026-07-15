@@ -2,12 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 
-import { UserRole } from "@/app/generated/prisma/client";
+import {
+  NotificationType,
+  UserRole,
+} from "@/app/generated/prisma/client";
 import {
   AuthorizationError,
   requireRole,
 } from "@/lib/auth-guard";
 import { canReviewDocument } from "@/lib/document-workflow";
+import { getNotificationHref } from "@/lib/notification-policy";
+import { getDesignerMemberUserIds } from "@/lib/notification-recipients";
+import { createNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 export type DocumentReviewActionState = {
@@ -54,6 +60,8 @@ async function getSubmittedDocumentForExpert(
     },
     select: {
       id: true,
+      title: true,
+      authorId: true,
       projectId: true,
       status: true,
       versions: {
@@ -141,6 +149,33 @@ async function reviewDocument({
         projectId: document.projectId,
       },
     });
+
+    const designerUserIds = await getDesignerMemberUserIds(
+      tx,
+      document.projectId,
+    );
+    const recipients = [document.authorId, ...designerUserIds];
+    await createNotifications(
+      tx,
+      recipients.map((userId) => ({
+        userId,
+        actorId: currentUserId,
+        type: isRejected
+          ? NotificationType.DOCUMENT_REJECTED
+          : NotificationType.DOCUMENT_APPROVED,
+        title: isRejected ? "Документ відхилено" : "Документ погоджено",
+        message: isRejected
+          ? `Експерт відхилив документ «${document.title}». Відкрийте документ, щоб переглянути причину.`
+          : `Експерт погодив документ «${document.title}».`,
+        href: getNotificationHref({
+          destination: "PROJECT",
+          role: UserRole.DESIGNER,
+          projectId: document.projectId,
+        }),
+        projectId: document.projectId,
+        documentId: document.id,
+      })),
+    );
   });
 
   revalidateDocumentReview(document.projectId);

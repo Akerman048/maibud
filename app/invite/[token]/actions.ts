@@ -4,13 +4,19 @@ import { hash } from "bcryptjs";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { Prisma } from "@/app/generated/prisma/client";
+import {
+  NotificationType,
+  Prisma,
+  UserRole,
+} from "@/app/generated/prisma/client";
 import { auth } from "@/auth";
 import {
   hashInvitationToken,
   normalizeInvitationEmail,
 } from "@/lib/invitations";
 import { canApplyInvitationRole } from "@/lib/membership-policy";
+import { getNotificationHref } from "@/lib/notification-policy";
+import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 export type AcceptInvitationState = {
@@ -102,6 +108,7 @@ export async function acceptInvitation(
         expiresAt: true,
         organizationId: true,
         projectId: true,
+        invitedById: true,
       },
     });
 
@@ -279,6 +286,17 @@ export async function acceptInvitation(
           },
         });
 
+        const acceptedUser = await tx.user.findUnique({
+          where: { id: acceptedUserId },
+          select: { name: true },
+        });
+
+        if (!acceptedUser) {
+          throw new AcceptInvitationError(
+            "Не вдалося визначити користувача запрошення.",
+          );
+        }
+
         const organizationMembership =
           await tx.organizationMember.upsert({
             where: {
@@ -320,6 +338,19 @@ export async function acceptInvitation(
               userId: acceptedUserId,
             },
           ],
+        });
+
+        await createNotification(tx, {
+          userId: invitation.invitedById,
+          actorId: acceptedUserId,
+          type: NotificationType.INVITATION_ACCEPTED,
+          title: "Запрошення прийнято",
+          message: `${acceptedUser.name} приєднався до організації.`,
+          href: getNotificationHref({
+            destination: "MEMBERS",
+            role: UserRole.HEAD,
+          }),
+          projectId: invitation.projectId ?? undefined,
         });
 
         if (invitation.projectId) {

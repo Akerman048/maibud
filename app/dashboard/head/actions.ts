@@ -3,8 +3,15 @@
 
 import { revalidatePath } from "next/cache";
 
-import { ProjectStatus, UserRole } from "@/app/generated/prisma/client";
+import {
+  NotificationType,
+  ProjectStatus,
+  UserRole,
+} from "@/app/generated/prisma/client";
 import { requireRole } from "@/lib/auth-guard";
+import { getNotificationHref } from "@/lib/notification-policy";
+import { getProjectMembers } from "@/lib/notification-recipients";
+import { createNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 export async function createProject(formData: FormData) {
@@ -78,6 +85,7 @@ export async function createProject(formData: FormData) {
         projectId: createdProject.id,
       },
     });
+
   });
 
   revalidatePath("/dashboard/head");
@@ -225,6 +233,30 @@ export async function archiveProject(projectId: string) {
         projectId,
       },
     });
+
+    const members = await getProjectMembers(tx, projectId, [
+      UserRole.HEAD,
+      UserRole.EXPERT,
+      UserRole.DESIGNER,
+      UserRole.ARCHIVIST,
+      UserRole.CLIENT,
+    ]);
+    await createNotifications(
+      tx,
+      members.map(({ userId, role }) => ({
+        userId,
+        actorId: currentUser.id,
+        type: NotificationType.PROJECT_ARCHIVED,
+        title: "Проєкт архівовано",
+        message: `Проєкт «${project.name}» переміщено в архів.`,
+        href: getNotificationHref({
+          destination: "PROJECT",
+          role,
+          projectId,
+        }),
+        projectId,
+      })),
+    );
   });
 
   revalidatePath("/dashboard/head");

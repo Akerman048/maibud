@@ -6,12 +6,16 @@ import { NextResponse } from "next/server";
 
 import {
   DocumentStatus,
+  NotificationType,
   Prisma,
   UserRole,
 } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
 import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { getNotificationHref } from "@/lib/notification-policy";
+import { getExpertMemberUserIds } from "@/lib/notification-recipients";
+import { createNotifications } from "@/lib/notifications";
 import { s3 } from "@/lib/s3";
 
 import type { CompleteDocumentUploadRequest } from "@/types/upload";
@@ -308,6 +312,25 @@ export async function POST(request: Request) {
             projectId,
           },
         });
+
+        const expertUserIds = await getExpertMemberUserIds(tx, projectId);
+        await createNotifications(
+          tx,
+          expertUserIds.map((userId) => ({
+            userId,
+            actorId: currentUser.id,
+            type: NotificationType.DOCUMENT_SUBMITTED,
+            title: "Новий документ на перевірку",
+            message: `Дизайнер подав документ «${document.title}» на перевірку.`,
+            href: getNotificationHref({
+              destination: "PROJECT",
+              role: UserRole.EXPERT,
+              projectId,
+            }),
+            projectId,
+            documentId: document.id,
+          })),
+        );
 
         return {
           documentId: document.id,

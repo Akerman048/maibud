@@ -2,12 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 
-import { UserRole } from "@/app/generated/prisma/client";
+import {
+  NotificationType,
+  UserRole,
+} from "@/app/generated/prisma/client";
 import {
   AuthorizationError,
   requireRole,
 } from "@/lib/auth-guard";
 import { canPublishDocument } from "@/lib/document-workflow";
+import { getNotificationHref } from "@/lib/notification-policy";
+import { getClientMemberUserIds } from "@/lib/notification-recipients";
+import { createNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 export type DocumentPublicationActionState = {
@@ -40,6 +46,7 @@ async function getDocumentForPublication(
     },
     select: {
       id: true,
+      title: true,
       projectId: true,
       status: true,
       isPublishedToClient: true,
@@ -173,6 +180,28 @@ export async function publishDocumentToClient(
           projectId: document.projectId,
         },
       });
+
+      const clientUserIds = await getClientMemberUserIds(
+        tx,
+        document.projectId,
+      );
+      await createNotifications(
+        tx,
+        clientUserIds.map((userId) => ({
+          userId,
+          actorId: currentUser.id,
+          type: NotificationType.DOCUMENT_PUBLISHED,
+          title: "Опубліковано документ",
+          message: `Для вас опубліковано документ «${document.title}».`,
+          href: getNotificationHref({
+            destination: "PROJECT",
+            role: UserRole.CLIENT,
+            projectId: document.projectId,
+          }),
+          projectId: document.projectId,
+          documentId: document.id,
+        })),
+      );
     });
 
     revalidateDocumentPublication(document.projectId);
@@ -248,6 +277,28 @@ export async function unpublishDocumentFromClient(
           projectId: document.projectId,
         },
       });
+
+      const clientUserIds = await getClientMemberUserIds(
+        tx,
+        document.projectId,
+      );
+      await createNotifications(
+        tx,
+        clientUserIds.map((userId) => ({
+          userId,
+          actorId: currentUser.id,
+          type: NotificationType.DOCUMENT_UNPUBLISHED,
+          title: "Документ більше недоступний",
+          message: `Документ «${document.title}» приховано від клієнтського перегляду.`,
+          href: getNotificationHref({
+            destination: "PROJECT",
+            role: UserRole.CLIENT,
+            projectId: document.projectId,
+          }),
+          projectId: document.projectId,
+          documentId: document.id,
+        })),
+      );
     });
 
     revalidateDocumentPublication(document.projectId);

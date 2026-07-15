@@ -52,7 +52,13 @@ The legacy `Comment` table remains available during the transition. After deploy
 pnpm exec tsx scripts/backfill-comment-threads.ts
 ```
 
-The backfill uses `legacyCommentId` as an idempotency marker, does not modify or delete legacy comments, and is never run by migrations or CI. Notification delivery is intentionally deferred to the next module; the Server Actions contain post-commit integration points.
+The backfill uses `legacyCommentId` as an idempotency marker, does not modify or delete legacy comments, and is never run by migrations or CI. Comment-thread Server Actions create internal notifications in the same database transaction as each thread event.
+
+## Notifications
+
+Internal notifications are stored in PostgreSQL and are always queried by their owner `userId`. Read state is represented by `readAt`; list pages use server-side filtering and pagination, while DashboardLayout performs one count query for the Sidebar unread badge. Document submission, version upload, review, client publication, comment-thread activity, project membership, invitation acceptance, and project archival create notifications in the same transaction as the business change when possible.
+
+Notification targets are generated from trusted entity ids and role-aware internal routes. Arbitrary external URLs are rejected. Email delivery, polling, WebSocket, and external realtime services are intentionally not part of this module.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

@@ -4,6 +4,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { hash } from "bcryptjs";
 import {
   CommentThreadStatus,
+  NotificationType,
   PrismaClient,
   ProjectStatus,
   UserRole,
@@ -20,6 +21,7 @@ const prisma = new PrismaClient({
 async function main() {
   const demoPasswordHash = await hash("Demo1234!", 12);
 
+  await prisma.notification.deleteMany();
   await prisma.commentMessage.deleteMany();
   await prisma.commentThread.deleteMany();
   await prisma.comment.deleteMany();
@@ -168,7 +170,7 @@ await prisma.comment.createMany({
   ],
 });
 
-await prisma.commentThread.create({
+const demoThread = await prisma.commentThread.create({
   data: {
     title: "Уточнення схеми підключення",
     section: "Зовнішні мережі",
@@ -222,6 +224,52 @@ await prisma.commentThread.create({
       projectId: projects[0].id,
       role: UserRole.CLIENT,
     },
+  });
+
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: expert.id,
+        actorId: designer.id,
+        type: NotificationType.DOCUMENT_SUBMITTED,
+        title: "Новий документ на перевірку",
+        message: `Дизайнер подав документ «${document1.title}» на перевірку.`,
+        href: `/dashboard/expert/projects/${projects[0].id}`,
+        projectId: projects[0].id,
+        documentId: document1.id,
+      },
+      {
+        userId: designer.id,
+        actorId: expert.id,
+        type: NotificationType.COMMENT_THREAD_CREATED,
+        title: "Нове зауваження до документа",
+        message: `Експерт створив зауваження до документа «${document1.title}».`,
+        href: `/dashboard/designer/comments/${demoThread.id}`,
+        projectId: projects[0].id,
+        documentId: document1.id,
+        commentThreadId: demoThread.id,
+      },
+      {
+        userId: client.id,
+        actorId: head.id,
+        type: NotificationType.DOCUMENT_PUBLISHED,
+        title: "Опубліковано документ",
+        message: `Для вас опубліковано документ «${document1.title}».`,
+        href: `/dashboard/client/projects/${projects[0].id}`,
+        projectId: projects[0].id,
+        documentId: document1.id,
+        readAt: new Date(),
+      },
+      {
+        userId: head.id,
+        actorId: designer.id,
+        type: NotificationType.PROJECT_MEMBER_ADDED,
+        title: "Користувача додано до проєкту",
+        message: `${designer.name} має доступ до проєкту «${projects[0].name}».`,
+        href: `/dashboard/head/projects/${projects[0].id}`,
+        projectId: projects[0].id,
+      },
+    ],
   });
 
   console.log("Seed completed");

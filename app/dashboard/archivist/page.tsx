@@ -12,7 +12,6 @@ export default async function ArchivistPage() {
         <Header
           title="Архів"
           subtitle="Документи, справи та комплектність архіву"
-          notificationCount={4}
         />
 
         <ArchiveView

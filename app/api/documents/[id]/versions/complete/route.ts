@@ -5,6 +5,7 @@ import {
 import { NextResponse } from "next/server";
 
 import {
+  NotificationType,
   Prisma,
   UserRole,
 } from "@/app/generated/prisma/client";
@@ -16,6 +17,9 @@ import {
   getNewVersionTransition,
 } from "@/lib/document-workflow";
 import { prisma } from "@/lib/prisma";
+import { getNotificationHref } from "@/lib/notification-policy";
+import { getExpertMemberUserIds } from "@/lib/notification-recipients";
+import { createNotifications } from "@/lib/notifications";
 import { s3 } from "@/lib/s3";
 
 import type {
@@ -172,6 +176,7 @@ export async function POST(
       },
       select: {
         id: true,
+        title: true,
         projectId: true,
         status: true,
         project: {
@@ -413,6 +418,33 @@ export async function POST(
               projectId: document.projectId,
             },
           });
+
+          const expertUserIds = await getExpertMemberUserIds(
+            tx,
+            document.projectId,
+          );
+          const resubmissionNote =
+            currentDocument.status === "REJECTED" ||
+            currentDocument.status === "APPROVED"
+              ? " Документ повторно подано на перевірку."
+              : "";
+          await createNotifications(
+            tx,
+            expertUserIds.map((userId) => ({
+              userId,
+              actorId: currentUser.id,
+              type: NotificationType.DOCUMENT_VERSION_UPLOADED,
+              title: "Завантажено нову версію документа",
+              message: `Дизайнер завантажив версію v${version.version} документа «${document.title}».${resubmissionNote}`,
+              href: getNotificationHref({
+                destination: "PROJECT",
+                role: UserRole.EXPERT,
+                projectId: document.projectId,
+              }),
+              projectId: document.projectId,
+              documentId,
+            })),
+          );
 
           const response: CompleteDocumentVersionUploadResponse = {
             documentId,

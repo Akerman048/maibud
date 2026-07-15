@@ -15,7 +15,6 @@ export default async function HeadPage() {
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Проєкти"
-          notificationCount={3}
           action={
             <AddProjectButton
               experts={experts}

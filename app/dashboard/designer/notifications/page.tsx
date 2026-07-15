@@ -6,8 +6,8 @@ type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function ArchivistNotificationsPage({ searchParams }: PageProps) {
-  const currentUser = await requireRole([UserRole.ARCHIVIST]);
+export default async function DesignerNotificationsPage({ searchParams }: PageProps) {
+  const currentUser = await requireRole([UserRole.DESIGNER]);
 
   return (
     <NotificationsPageContent

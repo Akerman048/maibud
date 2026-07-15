@@ -30,6 +30,7 @@ export default defineConfig({
         "lib/invitations.ts",
         "lib/membership-policy.ts",
         "lib/comment-thread-policy.ts",
+        "lib/notification-policy.ts",
       ],
       exclude: [
         "app/generated/**",

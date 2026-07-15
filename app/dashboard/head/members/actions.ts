@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import {
+  NotificationType,
   Prisma,
   UserRole,
 } from "@/app/generated/prisma/client";
@@ -18,6 +19,8 @@ import {
   canRemoveOrganizationMember,
 } from "@/lib/membership-policy";
 import { requireHeadOfOrganization } from "@/lib/organization-access";
+import { getNotificationHref } from "@/lib/notification-policy";
+import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import type { OrganizationActionState } from "@/types/organization";
 
@@ -277,6 +280,7 @@ export async function revokeInvitation(
           projectId: invitation.projectId,
         },
       });
+
     });
 
     revalidateMembers();
@@ -530,7 +534,7 @@ export async function addMemberToProject(
             id: input.projectId,
             organizationId: input.organizationId,
           },
-          select: { id: true },
+          select: { id: true, name: true },
         }),
       ]);
 
@@ -565,6 +569,20 @@ export async function addMemberToProject(
           userId: actor.id,
           projectId: project.id,
         },
+      });
+
+      await createNotification(tx, {
+        userId: member.userId,
+        actorId: actor.id,
+        type: NotificationType.PROJECT_MEMBER_ADDED,
+        title: "Вас додано до проєкту",
+        message: `Вас додано до проєкту «${project.name}».`,
+        href: getNotificationHref({
+          destination: "PROJECT",
+          role: member.role,
+          projectId: project.id,
+        }),
+        projectId: project.id,
       });
     });
 
@@ -605,8 +623,12 @@ export async function removeProjectMember(
         },
         select: {
           id: true,
+          userId: true,
           role: true,
           projectId: true,
+          project: {
+            select: { name: true },
+          },
         },
       });
 
@@ -621,6 +643,16 @@ export async function removeProjectMember(
           "HEAD не можна видалити з проєкту без окремої передачі керування.",
         );
       }
+
+      await createNotification(tx, {
+        userId: membership.userId,
+        actorId: actor.id,
+        type: NotificationType.PROJECT_MEMBER_REMOVED,
+        title: "Вас видалено з проєкту",
+        message: `Ваш доступ до проєкту «${membership.project.name}» припинено.`,
+        href: null,
+        projectId: membership.projectId,
+      });
 
       await tx.projectMember.delete({
         where: { id: membership.id },
