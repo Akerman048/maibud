@@ -1,11 +1,14 @@
 import { UserRole } from "@/app/generated/prisma/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
+import { EmailNotificationSettings } from "@/components/settings/EmailNotificationSettings";
 import { SettingsView } from "@/components/settings/SettingsView";
+import { getEmailSettings } from "@/lib/email/settings-data";
 import { requireDashboardRole } from "@/lib/require-dashboard-role";
 
 export default async function DesignerSettingsPage() {
   const user = await requireDashboardRole(UserRole.DESIGNER);
+  const emailSettings = await getEmailSettings(user.id);
 
   return (
     <DashboardLayout>
@@ -16,6 +19,7 @@ export default async function DesignerSettingsPage() {
           role={user.role}
           email={user.email ?? ""}
         />
+        <EmailNotificationSettings settings={emailSettings} />
       </div>
     </DashboardLayout>
   );

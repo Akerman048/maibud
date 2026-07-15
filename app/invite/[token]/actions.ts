@@ -18,11 +18,7 @@ import { canApplyInvitationRole } from "@/lib/membership-policy";
 import { getNotificationHref } from "@/lib/notification-policy";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
-
-export type AcceptInvitationState = {
-  error: string;
-  success: boolean;
-};
+import type { AcceptInvitationState } from "@/types/invitation-action";
 
 class AcceptInvitationError extends Error {}
 

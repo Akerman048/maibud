@@ -31,6 +31,10 @@ export default defineConfig({
         "lib/membership-policy.ts",
         "lib/comment-thread-policy.ts",
         "lib/notification-policy.ts",
+        "lib/email/email-events.ts",
+        "lib/email/retry-policy.ts",
+        "lib/email/safety.ts",
+        "lib/email/templates.ts",
       ],
       exclude: [
         "app/generated/**",

@@ -10,6 +10,10 @@ import {
 } from "@/app/generated/prisma/client";
 import { AuthorizationError } from "@/lib/auth-guard";
 import {
+  cancelPendingInvitationEmailJobs,
+  createInvitationEmailJob,
+} from "@/lib/email/email-jobs";
+import {
   generateInvitationToken,
   getInvitationExpirationDate,
   normalizeInvitationEmail,
@@ -120,23 +124,34 @@ export async function createInvitation(
     );
     const { token, tokenHash } = generateInvitationToken();
     const now = new Date();
+    const expiresAt = getInvitationExpirationDate(now);
+    const inviteUrl = `/invite/${token}`;
 
     await prisma.$transaction(
       async (tx) => {
-        if (input.projectId) {
-          const project = await tx.project.findFirst({
-            where: {
-              id: input.projectId,
-              organizationId: input.organizationId,
-            },
-            select: { id: true },
-          });
+        const organization = await tx.organization.findUnique({
+          where: { id: input.organizationId },
+          select: { name: true },
+        });
 
-          if (!project) {
-            throw new OrganizationActionError(
-              "Проєкт не знайдено в цій організації.",
-            );
-          }
+        if (!organization) {
+          throw new OrganizationActionError("Організацію не знайдено.");
+        }
+
+        const project = input.projectId
+          ? await tx.project.findFirst({
+              where: {
+                id: input.projectId,
+                organizationId: input.organizationId,
+              },
+              select: { id: true, name: true },
+            })
+          : null;
+
+        if (input.projectId && !project) {
+          throw new OrganizationActionError(
+            "Проєкт не знайдено в цій організації.",
+          );
         }
 
         const activeMember = await tx.organizationMember.findFirst({
@@ -184,7 +199,7 @@ export async function createInvitation(
             organizationId: input.organizationId,
             projectId: input.projectId,
             invitedById: user.id,
-            expiresAt: getInvitationExpirationDate(now),
+            expiresAt,
           },
         });
 
@@ -197,6 +212,16 @@ export async function createInvitation(
             projectId: input.projectId,
           },
         });
+
+        await createInvitationEmailJob(tx, {
+          invitationId: invitation.id,
+          recipientEmail: input.email,
+          organizationName: organization.name,
+          role: input.role,
+          projectName: project?.name,
+          expiresAt,
+          href: inviteUrl,
+        });
       },
       {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
@@ -208,7 +233,7 @@ export async function createInvitation(
     return {
       error: "",
       success: true,
-      inviteUrl: `/invite/${token}`,
+      inviteUrl,
     };
   } catch (error) {
     return stateFromError(error);
@@ -281,6 +306,7 @@ export async function revokeInvitation(
         },
       });
 
+      await cancelPendingInvitationEmailJobs(tx, input.invitationId);
     });
 
     revalidateMembers();
@@ -306,6 +332,7 @@ export async function resendInvitation(
     );
     const { token, tokenHash } = generateInvitationToken();
     const expiresAt = getInvitationExpirationDate();
+    const inviteUrl = `/invite/${token}`;
 
     await prisma.$transaction(async (tx) => {
       const invitation = await tx.invitation.findFirst({
@@ -314,8 +341,13 @@ export async function resendInvitation(
           organizationId: input.organizationId,
         },
         select: {
+          email: true,
+          role: true,
           status: true,
           projectId: true,
+          updatedAt: true,
+          organization: { select: { name: true } },
+          project: { select: { name: true } },
         },
       });
 
@@ -327,6 +359,14 @@ export async function resendInvitation(
           "Оновити можна лише pending або expired запрошення.",
         );
       }
+
+      if (Date.now() - invitation.updatedAt.getTime() < 60_000) {
+        throw new OrganizationActionError(
+          "Повторне надсилання доступне через 60 секунд.",
+        );
+      }
+
+      await cancelPendingInvitationEmailJobs(tx, input.invitationId);
 
       const result = await tx.invitation.updateMany({
         where: {
@@ -357,13 +397,23 @@ export async function resendInvitation(
           projectId: invitation.projectId,
         },
       });
+
+      await createInvitationEmailJob(tx, {
+        invitationId: input.invitationId,
+        recipientEmail: invitation.email,
+        organizationName: invitation.organization.name,
+        role: invitation.role,
+        projectName: invitation.project?.name,
+        expiresAt,
+        href: inviteUrl,
+      });
     });
 
     revalidateMembers();
     return {
       error: "",
       success: true,
-      inviteUrl: `/invite/${token}`,
+      inviteUrl,
     };
   } catch (error) {
     return stateFromError(error);

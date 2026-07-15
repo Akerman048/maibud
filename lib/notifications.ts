@@ -9,6 +9,7 @@ import {
   isSafeNotificationHref,
   shouldNotifyActor,
 } from "@/lib/notification-policy";
+import { createEmailJobForNotification } from "@/lib/email/email-jobs";
 
 export type CreateNotificationInput = {
   userId: string;
@@ -55,7 +56,7 @@ export async function createNotification(
 
   const normalized = normalizeNotificationInput(input);
 
-  return tx.notification.create({
+  const notification = await tx.notification.create({
     data: {
       type: normalized.type,
       title: normalized.title,
@@ -68,6 +69,26 @@ export async function createNotification(
       commentThreadId: normalized.commentThreadId,
     },
   });
+
+  const recipient = await tx.user.findUnique({
+    where: { id: normalized.userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      isActive: true,
+      emailNotificationsEnabled: true,
+      emailDocumentUpdates: true,
+      emailCommentUpdates: true,
+      emailMembershipUpdates: true,
+    },
+  });
+
+  if (recipient) {
+    await createEmailJobForNotification(tx, { notification, recipient });
+  }
+
+  return notification;
 }
 
 export async function createNotifications(

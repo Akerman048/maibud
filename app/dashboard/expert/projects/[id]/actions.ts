@@ -15,11 +15,7 @@ import { getNotificationHref } from "@/lib/notification-policy";
 import { getDesignerMemberUserIds } from "@/lib/notification-recipients";
 import { createNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
-
-export type DocumentReviewActionState = {
-  error: string;
-  success: boolean;
-};
+import type { DocumentReviewActionState } from "@/types/document-review-action";
 
 class DocumentReviewError extends Error {}
 

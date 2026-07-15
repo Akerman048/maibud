@@ -2,12 +2,10 @@
 
 import { useActionState } from "react";
 
-import {
-  acceptInvitation,
-  type AcceptInvitationState,
-} from "@/app/invite/[token]/actions";
+import { acceptInvitation } from "@/app/invite/[token]/actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import type { AcceptInvitationState } from "@/types/invitation-action";
 
 const initialState: AcceptInvitationState = {
   error: "",

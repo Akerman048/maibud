@@ -3,10 +3,7 @@
 import { AuthError } from "next-auth";
 
 import { signIn } from "@/auth";
-
-export type LoginActionState = {
-  error: string;
-};
+import type { LoginActionState } from "@/types/login-action";
 
 export async function login(
   _previousState: LoginActionState,
