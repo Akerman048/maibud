@@ -61,7 +61,7 @@ async function main() {
     },
   });
 
-  await prisma.user.create({
+  const archivist = await prisma.user.create({
     data: {
       name: "Іванов Дмитро",
       email: "dmytro.ivanov@example.com",
@@ -77,6 +77,14 @@ async function main() {
       role: UserRole.CLIENT,
       passwordHash: demoPasswordHash,
     },
+  });
+
+  await prisma.organizationMember.createMany({
+    data: [head, expert, designer, archivist, client].map((user) => ({
+      organizationId: organization.id,
+      userId: user.id,
+      role: user.role,
+    })),
   });
 
   const projects = await Promise.all([

@@ -24,7 +24,12 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
-      include: ["lib/document-workflow.ts", "lib/document-status.ts"],
+      include: [
+        "lib/document-workflow.ts",
+        "lib/document-status.ts",
+        "lib/invitations.ts",
+        "lib/membership-policy.ts",
+      ],
       exclude: [
         "app/generated/**",
         "prisma/migrations/**",

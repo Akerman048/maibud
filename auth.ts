@@ -50,10 +50,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: true,
             passwordHash: true,
             role: true,
+            isActive: true,
           },
         });
 
-        if (!user?.passwordHash) {
+        if (!user?.passwordHash || !user.isActive) {
           return null;
         }
 
