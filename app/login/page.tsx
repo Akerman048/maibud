@@ -4,8 +4,13 @@ import { auth } from "@/auth";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Card } from "@/components/ui/Card";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ invitationAccepted?: string }>;
+}) {
   const session = await auth();
+  const query = await searchParams;
 
   if (session?.user) {
     redirect("/dashboard");
@@ -31,6 +36,12 @@ export default async function LoginPage() {
         </div>
 
         <LoginForm />
+
+        {query.invitationAccepted === "1" && (
+          <p className="mt-4 rounded-md bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
+            Запрошення прийнято. Увійдіть із новими обліковими даними.
+          </p>
+        )}
 
         <div className="mt-6 rounded-md bg-slate-50 p-4 text-sm text-[var(--color-text-secondary)]">
           <div className="font-semibold text-slate-700">

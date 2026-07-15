@@ -20,6 +20,7 @@ type SidebarNavProps = {
 const navByRole = {
   head: [
     { label: "Проєкти", href: "/dashboard/head", icon: FiBriefcase },
+    { label: "Команда", href: "/dashboard/head/members", icon: FiUsers },
     { label: "Експерти", href: "/dashboard/head/experts", icon: FiUsers },
     { label: "Архів", href: "/dashboard/head/archive", icon: FiArchive },
     {
