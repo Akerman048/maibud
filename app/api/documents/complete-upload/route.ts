@@ -301,7 +301,7 @@ export async function POST(request: Request) {
 
         await tx.auditLog.create({
           data: {
-            action: "Завантажено першу версію документа",
+            action: "Документ подано на перевірку",
             entityType: "DOCUMENT",
             entityId: document.id,
             userId: currentUser.id,

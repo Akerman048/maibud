@@ -10,10 +10,23 @@ import type { DocumentItem } from "@/types/document";
 import type { Project } from "@/types/project";
 
 import { AddCommentButton } from "@/components/comments/AddCommentButton";
+import { DocumentPublicationActions } from "@/components/documents/DocumentPublicationActions";
+import { DocumentReviewActions } from "@/components/documents/DocumentReviewActions";
 import { DocumentVersions } from "@/components/documents/DocumentVersions";
 import { ProjectInfoGrid } from "@/components/projects/ProjectInfoGrid";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { getDocumentStatusMeta } from "@/lib/document-status";
+
+type DocumentActionState = {
+  error: string;
+  success: boolean;
+};
+
+type StatefulDocumentAction = (
+  previousState: DocumentActionState,
+  formData: FormData,
+) => Promise<DocumentActionState>;
 
 type ProjectDashboardDetailViewProps = {
   project: Project;
@@ -23,8 +36,12 @@ type ProjectDashboardDetailViewProps = {
   backHref: string;
   createCommentAction?: (formData: FormData) => Promise<void>;
   canUploadDocumentVersion?: boolean;
-  publishDocumentAction?: (documentId: string) => Promise<void>;
-  unpublishDocumentAction?: (documentId: string) => Promise<void>;
+  canReviewDocuments?: boolean;
+  canManageDocumentPublication?: boolean;
+  approveDocumentAction?: StatefulDocumentAction;
+  rejectDocumentAction?: StatefulDocumentAction;
+  publishDocumentAction?: StatefulDocumentAction;
+  unpublishDocumentAction?: StatefulDocumentAction;
 };
 
 type ProjectTab = "overview" | "remarks" | "documents" | "journal";
@@ -50,27 +67,6 @@ const tabs: {
     value: "journal",
   },
 ];
-
-function getDocumentStatusVariant(
-  status: DocumentItem["status"],
-) {
-  if (status === "approved") return "success";
-  if (status === "submitted") return "info";
-  if (status === "rejected") return "danger";
-
-  return "warning";
-}
-
-function getDocumentStatusLabel(
-  status: DocumentItem["status"],
-) {
-  if (status === "draft") return "Чернетка";
-  if (status === "submitted") return "На перевірці";
-  if (status === "approved") return "Готово";
-  if (status === "rejected") return "Відхилено";
-
-  return "Архів";
-}
 
 function getCommentStatusVariant(
   status: CommentItem["status"],
@@ -98,6 +94,10 @@ export function ProjectDashboardDetailView({
   backHref,
   createCommentAction,
   canUploadDocumentVersion = false,
+  canReviewDocuments = false,
+  canManageDocumentPublication = false,
+  approveDocumentAction,
+  rejectDocumentAction,
   publishDocumentAction,
   unpublishDocumentAction,
 }: ProjectDashboardDetailViewProps) {
@@ -279,11 +279,11 @@ export function ProjectDashboardDetailView({
                   return (
                     <div
                       key={document.id}
-                      className={`flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0 ${
+                      className={`flex flex-col justify-between gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0 lg:flex-row lg:items-start ${
                         isSelected ? "bg-slate-50" : ""
                       }`}
                     >
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <button
                           type="button"
                           onClick={() =>
@@ -299,54 +299,65 @@ export function ProjectDashboardDetailView({
                         </button>
 
                         <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                          {document.type}
+                          {document.type} · {document.latestVersion
+                            ? `Остання версія: v${document.latestVersion}`
+                            : "Версій немає"}
                         </div>
-                      </div>
 
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        {document.isPublishedToClient && (
-                          <Badge variant="success">Для клієнта</Badge>
+                        {document.reviewedByName && document.reviewedAt && (
+                          <div className="mt-1 text-xs text-[var(--color-text-muted)]">
+                            Перевірив: {document.reviewedByName} · {document.reviewedAt}
+                          </div>
                         )}
 
-                        <Badge
-                          variant={getDocumentStatusVariant(
-                            document.status,
+                        {document.status === "rejected" &&
+                          document.rejectionReason && (
+                            <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+                              <span className="font-semibold">
+                                Причина відхилення:
+                              </span>{" "}
+                              {document.rejectionReason}
+                            </div>
                           )}
-                        >
-                          {getDocumentStatusLabel(document.status)}
-                        </Badge>
+                      </div>
 
-                        {document.isPublishedToClient
-                          ? unpublishDocumentAction && (
-                              <form
-                                action={unpublishDocumentAction.bind(
-                                  null,
-                                  document.id,
-                                )}
-                              >
-                                <button
-                                  type="submit"
-                                  className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
-                                >
-                                  Скасувати публікацію
-                                </button>
-                              </form>
-                            )
-                          : publishDocumentAction && (
-                              <form
-                                action={publishDocumentAction.bind(
-                                  null,
-                                  document.id,
-                                )}
-                              >
-                                <button
-                                  type="submit"
-                                  className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
-                                >
-                                  Опублікувати для клієнта
-                                </button>
-                              </form>
-                            )}
+                      <div className="flex shrink-0 flex-col items-end gap-3">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          {document.isPublishedToClient && (
+                            <Badge variant="success">Для клієнта</Badge>
+                          )}
+
+                          <Badge
+                            variant={
+                              getDocumentStatusMeta(document.status)
+                                .variant
+                            }
+                          >
+                            {getDocumentStatusMeta(document.status).label}
+                          </Badge>
+                        </div>
+
+                        {canReviewDocuments &&
+                          document.status === "submitted" &&
+                          approveDocumentAction &&
+                          rejectDocumentAction && (
+                            <DocumentReviewActions
+                              documentId={document.id}
+                              documentName={document.name}
+                              approveAction={approveDocumentAction}
+                              rejectAction={rejectDocumentAction}
+                            />
+                          )}
+
+                        {canManageDocumentPublication &&
+                          publishDocumentAction &&
+                          unpublishDocumentAction && (
+                            <DocumentPublicationActions
+                              document={document}
+                              publishAction={publishDocumentAction}
+                              unpublishAction={unpublishDocumentAction}
+                            />
+                          )}
                       </div>
                     </div>
                   );
@@ -361,6 +372,7 @@ export function ProjectDashboardDetailView({
               documentId={selectedDocument.id}
               documentName={selectedDocument.name}
               canUpload={canUploadDocumentVersion}
+              documentStatus={selectedDocument.status}
             />
           )}
         </div>

@@ -11,6 +11,10 @@ export type DocumentItem = {
   project: string;
   type: string;
   status: DocumentStatus;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  reviewedByName: string | null;
+  latestVersion: number | null;
   isPublishedToClient: boolean;
 };
 

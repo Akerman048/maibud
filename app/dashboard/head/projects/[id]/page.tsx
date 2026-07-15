@@ -40,6 +40,7 @@ export default async function HeadProjectDetailPage({ params }: PageProps) {
         comments={comments}
         auditLogs={auditLogs}
         backHref="/dashboard/head"
+        canManageDocumentPublication
         publishDocumentAction={publishDocumentToClient}
         unpublishDocumentAction={unpublishDocumentFromClient}
       />

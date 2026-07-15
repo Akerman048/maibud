@@ -3,22 +3,61 @@
 import { revalidatePath } from "next/cache";
 
 import { UserRole } from "@/app/generated/prisma/client";
-import { requireRole } from "@/lib/auth-guard";
+import {
+  AuthorizationError,
+  requireRole,
+} from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 
-async function getDocumentForPublication(documentId: string) {
-  const document = await prisma.document.findUnique({
+export type DocumentPublicationActionState = {
+  error: string;
+  success: boolean;
+};
+
+class DocumentPublicationError extends Error {}
+
+async function getDocumentForPublication(
+  documentId: string,
+  currentUserId: string,
+  currentUserRole: UserRole,
+) {
+  const document = await prisma.document.findFirst({
     where: {
       id: documentId,
+      ...(currentUserRole === UserRole.ARCHIVIST
+        ? {}
+        : {
+            project: {
+              members: {
+                some: {
+                  userId: currentUserId,
+                  role: currentUserRole,
+                },
+              },
+            },
+          }),
     },
     select: {
       id: true,
       projectId: true,
+      status: true,
+      isPublishedToClient: true,
+      versions: {
+        orderBy: {
+          version: "desc",
+        },
+        take: 1,
+        select: {
+          id: true,
+        },
+      },
     },
   });
 
   if (!document) {
-    throw new Error("Document not found");
+    throw new DocumentPublicationError(
+      "Документ не знайдено або доступ заборонено.",
+    );
   }
 
   return document;
@@ -30,70 +69,193 @@ function revalidateDocumentPublication(projectId: string) {
   revalidatePath(`/dashboard/client/projects/${projectId}`);
 }
 
-export async function publishDocumentToClient(documentId: string) {
-  const currentUser = await requireRole([
-    UserRole.HEAD,
-    UserRole.ARCHIVIST,
-  ]);
-  const document = await getDocumentForPublication(documentId);
+function getPublicationErrorState(
+  error: unknown,
+): DocumentPublicationActionState {
+  if (error instanceof DocumentPublicationError) {
+    return {
+      error: error.message,
+      success: false,
+    };
+  }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.document.update({
-      where: {
-        id: document.id,
-      },
-      data: {
-        isPublishedToClient: true,
-        publishedAt: new Date(),
-        publishedById: currentUser.id,
-      },
+  if (error instanceof AuthorizationError) {
+    return {
+      error:
+        error.status === 401
+          ? "Увійдіть у систему, щоб виконати дію."
+          : "Недостатньо прав для цієї дії.",
+      success: false,
+    };
+  }
+
+  console.error("Document publication action failed", error);
+
+  return {
+    error: "Не вдалося змінити публікацію документа.",
+    success: false,
+  };
+}
+
+export async function publishDocumentToClient(
+  _previousState: DocumentPublicationActionState,
+  formData: FormData,
+): Promise<DocumentPublicationActionState> {
+  try {
+    const currentUser = await requireRole([
+      UserRole.HEAD,
+      UserRole.ARCHIVIST,
+    ]);
+    const documentId = String(
+      formData.get("documentId") ?? "",
+    ).trim();
+
+    if (!documentId) {
+      throw new DocumentPublicationError("Не вказано документ.");
+    }
+
+    const document = await getDocumentForPublication(
+      documentId,
+      currentUser.id,
+      currentUser.role,
+    );
+
+    if (document.status !== "APPROVED") {
+      throw new DocumentPublicationError(
+        "Для клієнта можна опублікувати лише погоджений документ.",
+      );
+    }
+
+    if (document.versions.length === 0) {
+      throw new DocumentPublicationError(
+        "Документ без версій не можна опублікувати.",
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const updateResult = await tx.document.updateMany({
+        where: {
+          id: document.id,
+          status: "APPROVED",
+          ...(currentUser.role === UserRole.ARCHIVIST
+            ? {}
+            : {
+                project: {
+                  members: {
+                    some: {
+                      userId: currentUser.id,
+                      role: currentUser.role,
+                    },
+                  },
+                },
+              }),
+        },
+        data: {
+          isPublishedToClient: true,
+          publishedAt: new Date(),
+          publishedById: currentUser.id,
+        },
+      });
+
+      if (updateResult.count !== 1) {
+        throw new DocumentPublicationError(
+          "Статус документа вже змінився. Оновіть сторінку.",
+        );
+      }
+
+      await tx.auditLog.create({
+        data: {
+          action: "Документ опубліковано для клієнта",
+          entityType: "DOCUMENT",
+          entityId: document.id,
+          userId: currentUser.id,
+          projectId: document.projectId,
+        },
+      });
     });
 
-    await tx.auditLog.create({
-      data: {
-        action: "Документ опубліковано для клієнта",
-        entityType: "DOCUMENT",
-        entityId: document.id,
-        userId: currentUser.id,
-        projectId: document.projectId,
-      },
-    });
-  });
+    revalidateDocumentPublication(document.projectId);
 
-  revalidateDocumentPublication(document.projectId);
+    return {
+      error: "",
+      success: true,
+    };
+  } catch (error) {
+    return getPublicationErrorState(error);
+  }
 }
 
 export async function unpublishDocumentFromClient(
-  documentId: string,
-) {
-  const currentUser = await requireRole([
-    UserRole.HEAD,
-    UserRole.ARCHIVIST,
-  ]);
-  const document = await getDocumentForPublication(documentId);
+  _previousState: DocumentPublicationActionState,
+  formData: FormData,
+): Promise<DocumentPublicationActionState> {
+  try {
+    const currentUser = await requireRole([
+      UserRole.HEAD,
+      UserRole.ARCHIVIST,
+    ]);
+    const documentId = String(
+      formData.get("documentId") ?? "",
+    ).trim();
 
-  await prisma.$transaction(async (tx) => {
-    await tx.document.update({
-      where: {
-        id: document.id,
-      },
-      data: {
-        isPublishedToClient: false,
-        publishedAt: null,
-        publishedById: null,
-      },
+    if (!documentId) {
+      throw new DocumentPublicationError("Не вказано документ.");
+    }
+
+    const document = await getDocumentForPublication(
+      documentId,
+      currentUser.id,
+      currentUser.role,
+    );
+
+    await prisma.$transaction(async (tx) => {
+      const updateResult = await tx.document.updateMany({
+        where: {
+          id: document.id,
+          ...(currentUser.role === UserRole.ARCHIVIST
+            ? {}
+            : {
+                project: {
+                  members: {
+                    some: {
+                      userId: currentUser.id,
+                      role: currentUser.role,
+                    },
+                  },
+                },
+              }),
+        },
+        data: {
+          isPublishedToClient: false,
+          publishedAt: null,
+          publishedById: null,
+        },
+      });
+
+      if (updateResult.count !== 1) {
+        throw new DocumentPublicationError(
+          "Документ уже змінився або доступ до нього втрачено.",
+        );
+      }
+
+      await tx.auditLog.create({
+        data: {
+          action: "Документ приховано від клієнта",
+          entityType: "DOCUMENT",
+          entityId: document.id,
+          userId: currentUser.id,
+          projectId: document.projectId,
+        },
+      });
     });
 
-    await tx.auditLog.create({
-      data: {
-        action: "Публікацію документа для клієнта скасовано",
-        entityType: "DOCUMENT",
-        entityId: document.id,
-        userId: currentUser.id,
-        projectId: document.projectId,
-      },
-    });
-  });
+    revalidateDocumentPublication(document.projectId);
 
-  revalidateDocumentPublication(document.projectId);
+    return {
+      error: "",
+      success: true,
+    };
+  } catch (error) {
+    return getPublicationErrorState(error);
+  }
 }

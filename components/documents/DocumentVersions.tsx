@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { FiDownload, FiExternalLink } from "react-icons/fi";
 
-import type { DocumentVersionItem } from "@/types/document";
+import type {
+  DocumentStatus,
+  DocumentVersionItem,
+} from "@/types/document";
 
 import { UploadDocumentVersionModal } from "@/components/documents/UploadDocumentVersionModal";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +16,7 @@ type DocumentVersionsProps = {
   documentId: string;
   documentName: string;
   canUpload?: boolean;
+  documentStatus: DocumentStatus;
 };
 
 type VersionsResponse = {
@@ -53,6 +57,7 @@ export function DocumentVersions({
   documentId,
   documentName,
   canUpload = false,
+  documentStatus,
 }: DocumentVersionsProps) {
   const [versions, setVersions] = useState<DocumentVersionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,6 +67,19 @@ export function DocumentVersions({
     string | null
   >(null);
   const [openingVersionId, setOpeningVersionId] = useState<string | null>(null);
+  const canUploadCurrentStatus = documentStatus !== "archived";
+
+  let uploadGuidance = "";
+
+  if (documentStatus === "rejected") {
+    uploadGuidance =
+      "Після завантаження нової версії документ буде повторно подано на перевірку.";
+  } else if (documentStatus === "approved") {
+    uploadGuidance =
+      "Нова версія скасує поточне погодження і потребуватиме повторної перевірки.";
+  } else if (documentStatus === "archived") {
+    uploadGuidance = "Архівний документ не можна змінювати.";
+  }
 
   const loadVersions = useCallback(async () => {
     try {
@@ -216,12 +234,21 @@ export function DocumentVersions({
           </div>
 
           {canUpload && (
-            <Button
-              type="button"
-              onClick={() => setIsUploadOpen(true)}
-            >
-              Завантажити нову версію
-            </Button>
+            <div className="flex max-w-md flex-col items-end gap-2">
+              <Button
+                type="button"
+                onClick={() => setIsUploadOpen(true)}
+                disabled={!canUploadCurrentStatus}
+              >
+                Завантажити нову версію
+              </Button>
+
+              {uploadGuidance && (
+                <p className="text-right text-xs text-[var(--color-text-muted)]">
+                  {uploadGuidance}
+                </p>
+              )}
+            </div>
           )}
         </div>
 
@@ -315,7 +342,7 @@ export function DocumentVersions({
         )}
       </Card>
 
-      {isUploadOpen && (
+      {isUploadOpen && canUploadCurrentStatus && (
         <UploadDocumentVersionModal
           documentId={documentId}
           documentName={documentName}

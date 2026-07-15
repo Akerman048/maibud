@@ -6,7 +6,11 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProjectDashboardDetailView } from "@/components/projects/ProjectDashboardDetailView";
 import { getDocumentsByProjectId } from "@/lib/documents";
 import { getCommentsByProjectId } from "@/lib/comments";
-import { createComment } from "./actions";
+import {
+  approveDocument,
+  createComment,
+  rejectDocument,
+} from "./actions";
 
 type PageProps = {
   params: Promise<{
@@ -37,6 +41,9 @@ export default async function ExpertProjectDetailPage({ params }: PageProps) {
         auditLogs={auditLogs}
         backHref="/dashboard/expert"
         createCommentAction={createComment}
+        canReviewDocuments
+        approveDocumentAction={approveDocument}
+        rejectDocumentAction={rejectDocument}
       />
     </DashboardLayout>
   );

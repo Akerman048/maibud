@@ -32,6 +32,8 @@ const ALLOWED_MIME_TYPES = new Set([
 
 const DEFAULT_MAX_FILE_SIZE = 25 * 1024 * 1024;
 
+class DocumentWorkflowConflictError extends Error {}
+
 type RouteContext = {
   params: Promise<{
     id: string;
@@ -166,6 +168,7 @@ export async function POST(
       select: {
         id: true,
         projectId: true,
+        status: true,
         project: {
           select: {
             organizationId: true,
@@ -181,6 +184,17 @@ export async function POST(
         },
         {
           status: 404,
+        },
+      );
+    }
+
+    if (document.status === "ARCHIVED") {
+      return NextResponse.json(
+        {
+          error: "Archived documents cannot be changed",
+        },
+        {
+          status: 409,
         },
       );
     }
@@ -305,6 +319,27 @@ export async function POST(
     try {
       const result = await prisma.$transaction(
         async (tx) => {
+          const currentDocument = await tx.document.findUnique({
+            where: {
+              id: documentId,
+            },
+            select: {
+              status: true,
+            },
+          });
+
+          if (!currentDocument) {
+            throw new DocumentWorkflowConflictError(
+              "Document no longer exists",
+            );
+          }
+
+          if (currentDocument.status === "ARCHIVED") {
+            throw new DocumentWorkflowConflictError(
+              "Archived documents cannot be changed",
+            );
+          }
+
           const latestVersion =
             await tx.documentVersion.findFirst({
               where: {
@@ -334,9 +369,43 @@ export async function POST(
             },
           });
 
+          let auditAction =
+            `Завантажено версію v${nextVersion} документа`;
+
+          if (currentDocument.status === "REJECTED") {
+            auditAction =
+              "Завантажено нову версію та повторно подано документ на перевірку";
+          } else if (currentDocument.status === "DRAFT") {
+            auditAction = "Документ подано на перевірку";
+          } else if (currentDocument.status === "APPROVED") {
+            auditAction =
+              "Завантажено нову версію погодженого документа та повторно подано на перевірку";
+          }
+
+          if (currentDocument.status !== "SUBMITTED") {
+            await tx.document.update({
+              where: {
+                id: documentId,
+              },
+              data: {
+                status: "SUBMITTED",
+                reviewedAt: null,
+                reviewedById: null,
+                rejectionReason: null,
+                ...(currentDocument.status === "APPROVED"
+                  ? {
+                      isPublishedToClient: false,
+                      publishedAt: null,
+                      publishedById: null,
+                    }
+                  : {}),
+              },
+            });
+          }
+
           await tx.auditLog.create({
             data: {
-              action: `Завантажено версію v${nextVersion} документа`,
+              action: auditAction,
               entityType: "DOCUMENT",
               entityId: documentId,
               userId: currentUser.id,
@@ -370,6 +439,17 @@ export async function POST(
           {
             error:
               "Version conflict. Another version may have been uploaded simultaneously.",
+          },
+          {
+            status: 409,
+          },
+        );
+      }
+
+      if (error instanceof DocumentWorkflowConflictError) {
+        return NextResponse.json(
+          {
+            error: error.message,
           },
           {
             status: 409,

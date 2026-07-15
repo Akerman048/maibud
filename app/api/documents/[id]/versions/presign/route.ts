@@ -140,6 +140,7 @@ export async function POST(
       },
       select: {
         id: true,
+        status: true,
         project: {
           select: {
             id: true,
@@ -156,6 +157,17 @@ export async function POST(
         },
         {
           status: 404,
+        },
+      );
+    }
+
+    if (document.status === "ARCHIVED") {
+      return NextResponse.json(
+        {
+          error: "Archived documents cannot be changed",
+        },
+        {
+          status: 409,
         },
       );
     }

@@ -56,6 +56,7 @@ export async function getClientProjectById(projectId: string) {
       documents: {
         where: {
           isPublishedToClient: true,
+          status: "APPROVED",
         },
         select: {
           id: true,

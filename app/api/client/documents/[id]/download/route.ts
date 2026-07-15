@@ -28,6 +28,7 @@ export async function GET(
       where: {
         id: documentId,
         isPublishedToClient: true,
+        status: "APPROVED",
         project: {
           members: {
             some: {

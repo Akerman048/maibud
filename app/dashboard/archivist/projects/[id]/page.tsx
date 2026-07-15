@@ -41,6 +41,7 @@ export default async function ArchivistProjectDetailPage({
         comments={comments}
         backHref="/dashboard/archivist/projects"
         auditLogs={auditLogs}
+        canManageDocumentPublication
         publishDocumentAction={publishDocumentToClient}
         unpublishDocumentAction={unpublishDocumentFromClient}
       />

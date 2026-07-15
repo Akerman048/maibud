@@ -32,13 +32,13 @@ export default async function DesignerProjectDetailPage({
   return (
     <DashboardLayout>
       <ProjectDashboardDetailView
-  project={project}
-  documents={documents}
-  comments={comments}
-  auditLogs={auditLogs}
-  backHref="/dashboard/designer"
-  canUploadDocumentVersion
-/>
+        project={project}
+        documents={documents}
+        comments={comments}
+        auditLogs={auditLogs}
+        backHref="/dashboard/designer"
+        canUploadDocumentVersion
+      />
     </DashboardLayout>
   );
 }
