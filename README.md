@@ -42,6 +42,18 @@ pnpm exec tsx scripts/backfill-organization-members.ts
 
 Run the backfill explicitly against the intended environment. It is never executed by CI or migrations. The summary reports users without project or organization evidence instead of guessing their organization; assign those users manually after review. Because Auth.js uses JWT sessions, users should sign in again after an organization role change so the dashboard redirect uses the updated global compatibility role. An existing user cannot accept an invitation with a conflicting role while they retain active memberships in another organization, because the current dashboard still relies on one global compatibility role.
 
+## Comment threads
+
+Document remarks are stored as discussion threads. An EXPERT creates a thread for a document or a specific document version; EXPERT and DESIGNER project members can reply. A DESIGNER marks an OPEN or RETURNED thread as completed (`RESOLVED`), and an EXPERT can return it for further work (`RETURNED`). Messages use soft delete and retain their database content for auditability.
+
+The legacy `Comment` table remains available during the transition. After deploying the additive comment-thread migration, migrate legacy rows explicitly with:
+
+```bash
+pnpm exec tsx scripts/backfill-comment-threads.ts
+```
+
+The backfill uses `legacyCommentId` as an idempotency marker, does not modify or delete legacy comments, and is never run by migrations or CI. Notification delivery is intentionally deferred to the next module; the Server Actions contain post-commit integration points.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More

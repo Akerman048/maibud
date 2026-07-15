@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 
+import { UserRole } from "@/app/generated/prisma/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProjectDashboardDetailView } from "@/components/projects/ProjectDashboardDetailView";
 import { getProjectAuditLogs } from "@/lib/audit";
-import { getCommentsByProjectId } from "@/lib/comments";
+import { requireRole } from "@/lib/auth-guard";
+import { getCommentThreadsByProjectId } from "@/lib/comment-threads";
 import { getDocumentsByProjectId } from "@/lib/documents";
 import { getProjectById } from "@/lib/projects";
 
@@ -17,11 +19,12 @@ export default async function DesignerProjectDetailPage({
   params,
 }: PageProps) {
   const { id } = await params;
+  const currentUser = await requireRole([UserRole.DESIGNER]);
 
-  const [project, documents, comments, auditLogs] = await Promise.all([
+  const [project, documents, commentThreads, auditLogs] = await Promise.all([
     getProjectById(id),
     getDocumentsByProjectId(id),
-    getCommentsByProjectId(id),
+    getCommentThreadsByProjectId(id, currentUser.id, currentUser.role),
     getProjectAuditLogs(id),
   ]);
 
@@ -34,9 +37,10 @@ export default async function DesignerProjectDetailPage({
       <ProjectDashboardDetailView
         project={project}
         documents={documents}
-        comments={comments}
+        commentThreads={commentThreads}
         auditLogs={auditLogs}
         backHref="/dashboard/designer"
+        commentThreadBaseHref="/dashboard/designer/comments"
         canUploadDocumentVersion
       />
     </DashboardLayout>

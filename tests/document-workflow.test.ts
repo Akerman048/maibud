@@ -4,7 +4,6 @@ import {
   canPublishDocument,
   canReviewDocument,
   canUploadDocumentVersion,
-  DocumentWorkflowError,
   getNewVersionTransition,
 } from "@/lib/document-workflow";
 
@@ -114,7 +113,7 @@ describe("new document version transitions", () => {
         nextVersion: 2,
       }),
     ).toThrowError(
-      expect.objectContaining<DocumentWorkflowError>({
+      expect.objectContaining({
         code: "ARCHIVED_DOCUMENT",
       }),
     );

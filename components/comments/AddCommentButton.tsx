@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FiMessageSquare } from "react-icons/fi";
 
 import type { DocumentItem } from "@/types/document";
+import type { CommentThreadActionState } from "@/types/comment-thread";
 import { AddCommentModal } from "@/components/comments/AddCommentModal";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
@@ -11,7 +12,10 @@ import { Toast } from "@/components/ui/Toast";
 type AddCommentButtonProps = {
   projectId: string;
   documents: DocumentItem[];
-  createCommentAction: (formData: FormData) => Promise<void>;
+  createCommentAction: (
+    previousState: CommentThreadActionState,
+    formData: FormData,
+  ) => Promise<CommentThreadActionState>;
 };
 
 export function AddCommentButton({

@@ -15,6 +15,10 @@ export type DocumentItem = {
   reviewedAt: string | null;
   reviewedByName: string | null;
   latestVersion: number | null;
+  versions: {
+    id: string;
+    version: number;
+  }[];
   isPublishedToClient: boolean;
 };
 

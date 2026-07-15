@@ -5,11 +5,15 @@ import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
 
 import type { AuditLogItem } from "@/types/audit";
-import type { CommentItem } from "@/types/comment";
+import type {
+  CommentThreadActionState,
+  CommentThreadItem,
+} from "@/types/comment-thread";
 import type { DocumentItem } from "@/types/document";
 import type { Project } from "@/types/project";
 
 import { AddCommentButton } from "@/components/comments/AddCommentButton";
+import { CommentThreadsView } from "@/components/comments/CommentThreadsView";
 import { DocumentPublicationActions } from "@/components/documents/DocumentPublicationActions";
 import { DocumentReviewActions } from "@/components/documents/DocumentReviewActions";
 import { DocumentVersions } from "@/components/documents/DocumentVersions";
@@ -31,10 +35,14 @@ type StatefulDocumentAction = (
 type ProjectDashboardDetailViewProps = {
   project: Project;
   documents: DocumentItem[];
-  comments: CommentItem[];
+  commentThreads: CommentThreadItem[];
   auditLogs?: AuditLogItem[];
   backHref: string;
-  createCommentAction?: (formData: FormData) => Promise<void>;
+  createCommentAction?: (
+    previousState: CommentThreadActionState,
+    formData: FormData,
+  ) => Promise<CommentThreadActionState>;
+  commentThreadBaseHref?: string;
   canUploadDocumentVersion?: boolean;
   canReviewDocuments?: boolean;
   canManageDocumentPublication?: boolean;
@@ -68,31 +76,14 @@ const tabs: {
   },
 ];
 
-function getCommentStatusVariant(
-  status: CommentItem["status"],
-) {
-  if (status === "resolved") return "success";
-  if (status === "returned") return "danger";
-
-  return "warning";
-}
-
-function getCommentStatusLabel(
-  status: CommentItem["status"],
-) {
-  if (status === "open") return "Відкрите";
-  if (status === "resolved") return "Відпрацьоване";
-
-  return "Повернено";
-}
-
 export function ProjectDashboardDetailView({
   project,
   documents,
-  comments,
+  commentThreads,
   auditLogs = [],
   backHref,
   createCommentAction,
+  commentThreadBaseHref,
   canUploadDocumentVersion = false,
   canReviewDocuments = false,
   canManageDocumentPublication = false,
@@ -218,36 +209,12 @@ export function ProjectDashboardDetailView({
             <h2 className="font-semibold">Зауваження проєкту</h2>
           </div>
 
-          {comments.length === 0 ? (
-            <div className="px-5 py-6 text-sm text-[var(--color-text-secondary)]">
-              Зауважень поки немає.
-            </div>
-          ) : (
-            <div>
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="border-b border-slate-100 px-5 py-4 last:border-b-0"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="font-semibold">{comment.section}</div>
-
-                      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                        {comment.text}
-                      </p>
-                    </div>
-
-                    <Badge
-                      variant={getCommentStatusVariant(comment.status)}
-                    >
-                      {getCommentStatusLabel(comment.status)}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="p-5">
+            <CommentThreadsView
+              threads={commentThreads}
+              detailBaseHref={commentThreadBaseHref}
+            />
+          </div>
         </Card>
       )}
 
@@ -415,7 +382,9 @@ export function ProjectDashboardDetailView({
                       {log.createdAt}
                     </span>
 
-                    {log.entityType === "COMMENT" && (
+                    {["COMMENT", "COMMENT_THREAD", "COMMENT_MESSAGE"].includes(
+                      log.entityType,
+                    ) && (
                       <button
                         type="button"
                         onClick={() => handleTabChange("remarks")}

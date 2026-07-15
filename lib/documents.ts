@@ -43,8 +43,8 @@ export async function getDocuments(): Promise<DocumentItem[]> {
         orderBy: {
           version: "desc",
         },
-        take: 1,
         select: {
+          id: true,
           version: true,
         },
       },
@@ -65,6 +65,7 @@ export async function getDocuments(): Promise<DocumentItem[]> {
       document.reviewedAt?.toLocaleString("uk-UA") ?? null,
     reviewedByName: document.reviewedBy?.name ?? null,
     latestVersion: document.versions[0]?.version ?? null,
+    versions: document.versions,
     isPublishedToClient: document.isPublishedToClient,
   }));
 }
@@ -97,8 +98,8 @@ export async function getDocumentsByProjectId(
         orderBy: {
           version: "desc",
         },
-        take: 1,
         select: {
+          id: true,
           version: true,
         },
       },
@@ -119,6 +120,7 @@ export async function getDocumentsByProjectId(
       document.reviewedAt?.toLocaleString("uk-UA") ?? null,
     reviewedByName: document.reviewedBy?.name ?? null,
     latestVersion: document.versions[0]?.version ?? null,
+    versions: document.versions,
     isPublishedToClient: document.isPublishedToClient,
   }));
 }
