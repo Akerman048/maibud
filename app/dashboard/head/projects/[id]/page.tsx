@@ -28,7 +28,7 @@ export default async function HeadProjectDetailPage({ params }: PageProps) {
   }
 
   return (
-    <DashboardLayout role="head">
+    <DashboardLayout>
       <ProjectDashboardDetailView
         project={project}
         documents={documents}

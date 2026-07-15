@@ -20,7 +20,7 @@ export default async function HeadArchiveDetailPage({ params }: PageProps) {
   }
 
   return (
-    <DashboardLayout role="head">
+    <DashboardLayout>
       <ArchiveDetailView
         project={project}
         backHref="/dashboard/head/archive"

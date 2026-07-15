@@ -7,7 +7,7 @@ export default async function ExpertPage() {
   const projects = await getProjects();
 
   return (
-    <DashboardLayout role="expert">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Мої проєкти"

@@ -4,7 +4,7 @@ import { NotificationsView } from "@/components/notifications/NotificationsView"
 
 export default function ArchivistNotificationsPage() {
   return (
-    <DashboardLayout role="archivist">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header title="Сповіщення" subtitle="4 нові події архіву" />
         <NotificationsView />

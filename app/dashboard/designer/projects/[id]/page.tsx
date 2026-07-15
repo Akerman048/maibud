@@ -30,7 +30,7 @@ export default async function DesignerProjectDetailPage({
   }
 
   return (
-    <DashboardLayout role="designer">
+    <DashboardLayout>
       <ProjectDashboardDetailView
   project={project}
   documents={documents}

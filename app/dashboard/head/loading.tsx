@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function HeadLoading() {
   return (
-    <DashboardLayout role="head">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <div className="flex items-center justify-between">
           <Skeleton className="h-8 w-32" />

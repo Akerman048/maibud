@@ -8,7 +8,7 @@ export default async function DesignerCommentsPage() {
   const comments = await getComments();
 
   return (
-    <DashboardLayout role="designer">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Зауваження"

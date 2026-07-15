@@ -8,7 +8,7 @@ export default async function DesignerPage() {
   const projects = await getProjects();
 
   return (
-    <DashboardLayout role="designer">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Мої проєкти"

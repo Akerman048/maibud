@@ -7,7 +7,7 @@ export default async function ArchivistProjectsPage() {
   const projects = await getProjects();
 
   return (
-    <DashboardLayout role="archivist">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Проєкти"

@@ -7,7 +7,7 @@ export default async function ExpertDocumentsPage() {
   const documents = await getDocuments();
 
   return (
-    <DashboardLayout role="expert">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header title="Документи" subtitle="Файли, доступні для експертизи" />
 

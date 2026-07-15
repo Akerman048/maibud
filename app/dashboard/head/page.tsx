@@ -11,7 +11,7 @@ export default async function HeadPage() {
   const experts = await getExperts();
 
   return (
-    <DashboardLayout role="head">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Проєкти"

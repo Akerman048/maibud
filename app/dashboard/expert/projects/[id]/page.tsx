@@ -29,7 +29,7 @@ export default async function ExpertProjectDetailPage({ params }: PageProps) {
   }
 
   return (
-    <DashboardLayout role="expert">
+    <DashboardLayout>
       <ProjectDashboardDetailView
         project={project}
         documents={documents}

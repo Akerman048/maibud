@@ -30,7 +30,7 @@ export default async function ArchivistProjectDetailPage({
   }
 
   return (
-    <DashboardLayout role="archivist">
+    <DashboardLayout>
       <ProjectDashboardDetailView
         project={project}
         documents={documents}

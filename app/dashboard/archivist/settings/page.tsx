@@ -1,16 +1,20 @@
+import { UserRole } from "@/app/generated/prisma/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { SettingsView } from "@/components/settings/SettingsView";
+import { requireDashboardRole } from "@/lib/require-dashboard-role";
 
-export default function ExpertSettingsPage() {
+export default async function ArchivistSettingsPage() {
+  const user = await requireDashboardRole(UserRole.ARCHIVIST);
+
   return (
-    <DashboardLayout role="archivist">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header title="Налаштування" />
         <SettingsView
-          name="Коваль Олег"
-          role="Експерт · Газопостачання"
-          email="oleh.koval@example.com"
+          name={user.name ?? ""}
+          role={user.role}
+          email={user.email ?? ""}
         />
       </div>
     </DashboardLayout>

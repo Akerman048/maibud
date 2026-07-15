@@ -22,7 +22,7 @@ export default async function ArchivistArchiveDetailPage({
   }
 
   return (
-    <DashboardLayout role="designer">
+    <DashboardLayout>
       {" "}
       <ArchiveDetailView project={project} backHref="/dashboard/designer/archive" />
     </DashboardLayout>

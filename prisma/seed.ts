@@ -61,6 +61,23 @@ async function main() {
     },
   });
 
+  await prisma.user.createMany({
+    data: [
+      {
+        name: "Іванов Дмитро",
+        email: "dmytro.ivanov@example.com",
+        role: UserRole.ARCHIVIST,
+        passwordHash: demoPasswordHash,
+      },
+      {
+        name: "Бондаренко Марія",
+        email: "mariia.bondarenko@example.com",
+        role: UserRole.CLIENT,
+        passwordHash: demoPasswordHash,
+      },
+    ],
+  });
+
   const projects = await Promise.all([
     prisma.project.create({
       data: {

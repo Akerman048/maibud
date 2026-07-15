@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function ExpertLoading() {
   return (
-    <DashboardLayout role="expert">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <div>
           <Skeleton className="h-8 w-40" />

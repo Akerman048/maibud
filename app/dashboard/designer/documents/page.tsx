@@ -10,7 +10,7 @@ export default async function DesignerDocumentsPage() {
   const projects = await getProjectOptions();
 
   return (
-    <DashboardLayout role="designer">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Документи"

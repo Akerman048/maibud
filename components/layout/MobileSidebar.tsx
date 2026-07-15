@@ -5,11 +5,18 @@ import { FiMenu, FiX } from "react-icons/fi";
 
 import { Sidebar, type DashboardRole } from "./Sidebar";
 
+import type { UserRole } from "@/app/generated/prisma/client";
+
 type MobileSidebarProps = {
   role: DashboardRole;
+  user: {
+    name?: string | null;
+    email?: string | null;
+    role: UserRole;
+  };
 };
 
-export function MobileSidebar({ role }: MobileSidebarProps) {
+export function MobileSidebar({ role, user }: MobileSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -39,7 +46,7 @@ export function MobileSidebar({ role }: MobileSidebarProps) {
               <FiX className="size-5" />
             </button>
 
-            <Sidebar role={role} />
+            <Sidebar role={role} user={user} />
           </div>
         </div>
       )}

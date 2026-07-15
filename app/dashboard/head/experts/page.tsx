@@ -29,7 +29,7 @@ const experts = [
 
 export default function HeadExpertsPage() {
   return (
-    <DashboardLayout role="head">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header title="Експерти" subtitle="Команда експертів та їх завантаження" />
 

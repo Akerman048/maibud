@@ -8,7 +8,7 @@ export default async function ExpertCommentsPage() {
   const comments = await getComments();
 
   return (
-    <DashboardLayout role="expert">
+    <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header
           title="Зауваження"
