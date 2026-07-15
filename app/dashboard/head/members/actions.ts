@@ -3,10 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import {
-  Prisma,
-  type UserRole,
-} from "@/app/generated/prisma/client";
+import { Prisma } from "@/app/generated/prisma/client";
 import { AuthorizationError } from "@/lib/auth-guard";
 import {
   generateInvitationToken,
@@ -19,12 +16,7 @@ import {
 } from "@/lib/membership-policy";
 import { requireHeadOfOrganization } from "@/lib/organization-access";
 import { prisma } from "@/lib/prisma";
-
-export type OrganizationActionState = {
-  error: string;
-  success: boolean;
-  inviteUrl?: string;
-};
+import type { OrganizationActionState } from "@/types/organization";
 
 class OrganizationActionError extends Error {}
 
@@ -750,5 +742,3 @@ export async function updateOrganizationMemberRole(
     return stateFromError(error);
   }
 }
-
-export type { UserRole };
