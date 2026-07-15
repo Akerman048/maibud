@@ -12,3 +12,13 @@ export type DocumentItem = {
   type: string;
   status: DocumentStatus;
 };
+
+export type DocumentVersionItem = {
+  id: string;
+  version: number;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedBy: string;
+  createdAt: string;
+};

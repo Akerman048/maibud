@@ -1,19 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
 
-import type { Project } from "@/types/project";
-
+import type { AuditLogItem } from "@/types/audit";
 import type { CommentItem } from "@/types/comment";
 import type { DocumentItem } from "@/types/document";
+import type { Project } from "@/types/project";
 
 import { AddCommentButton } from "@/components/comments/AddCommentButton";
+import { DocumentVersions } from "@/components/documents/DocumentVersions";
+import { ProjectInfoGrid } from "@/components/projects/ProjectInfoGrid";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import { ProjectInfoGrid } from "@/components/projects/ProjectInfoGrid";
-import type { AuditLogItem } from "@/types/audit";
 
 type ProjectDashboardDetailViewProps = {
   project: Project;
@@ -22,6 +22,7 @@ type ProjectDashboardDetailViewProps = {
   auditLogs?: AuditLogItem[];
   backHref: string;
   createCommentAction?: (formData: FormData) => Promise<void>;
+  canUploadDocumentVersion?: boolean;
 };
 
 type ProjectTab = "overview" | "remarks" | "documents" | "journal";
@@ -48,6 +49,45 @@ const tabs: {
   },
 ];
 
+function getDocumentStatusVariant(
+  status: DocumentItem["status"],
+) {
+  if (status === "approved") return "success";
+  if (status === "submitted") return "info";
+  if (status === "rejected") return "danger";
+
+  return "warning";
+}
+
+function getDocumentStatusLabel(
+  status: DocumentItem["status"],
+) {
+  if (status === "draft") return "Чернетка";
+  if (status === "submitted") return "На перевірці";
+  if (status === "approved") return "Готово";
+  if (status === "rejected") return "Відхилено";
+
+  return "Архів";
+}
+
+function getCommentStatusVariant(
+  status: CommentItem["status"],
+) {
+  if (status === "resolved") return "success";
+  if (status === "returned") return "danger";
+
+  return "warning";
+}
+
+function getCommentStatusLabel(
+  status: CommentItem["status"],
+) {
+  if (status === "open") return "Відкрите";
+  if (status === "resolved") return "Відпрацьоване";
+
+  return "Повернено";
+}
+
 export function ProjectDashboardDetailView({
   project,
   documents,
@@ -55,8 +95,28 @@ export function ProjectDashboardDetailView({
   auditLogs = [],
   backHref,
   createCommentAction,
+  canUploadDocumentVersion = false,
 }: ProjectDashboardDetailViewProps) {
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    null,
+  );
+
+  const selectedDocument = useMemo(
+    () =>
+      documents.find(
+        (document) => document.id === selectedDocumentId,
+      ) ?? null,
+    [documents, selectedDocumentId],
+  );
+
+  function handleTabChange(tab: ProjectTab) {
+    setActiveTab(tab);
+
+    if (tab !== "documents") {
+      setSelectedDocumentId(null);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -69,7 +129,7 @@ export function ProjectDashboardDetailView({
       </Link>
 
       <div>
-        <div className="mb-2 flex items-center gap-3">
+        <div className="mb-2 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold tracking-[-0.01em]">
             {project.name}
           </h1>
@@ -83,7 +143,6 @@ export function ProjectDashboardDetailView({
       </div>
 
       <div className="flex overflow-x-auto border-b border-[var(--color-border)]">
-        {" "}
         {tabs.map((tab) => {
           const isActive = activeTab === tab.value;
 
@@ -91,10 +150,7 @@ export function ProjectDashboardDetailView({
             <button
               key={tab.value}
               type="button"
-              onClick={() => {
-               
-                setActiveTab(tab.value);
-              }}
+              onClick={() => handleTabChange(tab.value)}
               className={`relative shrink-0 px-4 py-3 text-sm font-semibold transition ${
                 isActive
                   ? "text-[var(--color-accent)]"
@@ -117,36 +173,38 @@ export function ProjectDashboardDetailView({
             <ProjectInfoGrid project={project} />
           </Card>
 
-<Card className="p-6">
-  <h2 className="mb-5 text-lg font-semibold">Останні оновлення</h2>
+          <Card className="p-6">
+            <h2 className="mb-5 text-lg font-semibold">
+              Останні оновлення
+            </h2>
 
-  {auditLogs.length === 0 ? (
-    <p className="text-sm text-[var(--color-text-secondary)]">
-      Подій поки немає.
-    </p>
-  ) : (
-    <div className="flex flex-col">
-      {auditLogs.slice(0, 3).map((log) => (
-        <div
-          key={log.id}
-          className="border-b border-[var(--color-border)] py-4 last:border-b-0"
-        >
-          <div className="font-semibold">{log.action}</div>
+            {auditLogs.length === 0 ? (
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Подій поки немає.
+              </p>
+            ) : (
+              <div className="flex flex-col">
+                {auditLogs.slice(0, 3).map((log) => (
+                  <div
+                    key={log.id}
+                    className="border-b border-[var(--color-border)] py-4 last:border-b-0"
+                  >
+                    <div className="font-semibold">{log.action}</div>
 
-          {log.documentTitle && (
-            <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Документ: {log.documentTitle}
-            </div>
-          )}
+                    {log.documentTitle && (
+                      <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                        Документ: {log.documentTitle}
+                      </div>
+                    )}
 
-          <div className="mt-1 text-sm text-[var(--color-text-muted)]">
-            {log.userName ?? "Система"} · {log.createdAt}
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
-</Card>
+                    <div className="mt-1 text-sm text-[var(--color-text-muted)]">
+                      {log.userName ?? "Система"} · {log.createdAt}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
       )}
 
@@ -156,96 +214,114 @@ export function ProjectDashboardDetailView({
             <h2 className="font-semibold">Зауваження проєкту</h2>
           </div>
 
-          <div>
-            {comments.map((comment) => (
-              <div
-                key={comment.id}
-                className="border-b border-slate-100 px-5 py-4 last:border-b-0"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="font-semibold">{comment.section}</div>
+          {comments.length === 0 ? (
+            <div className="px-5 py-6 text-sm text-[var(--color-text-secondary)]">
+              Зауважень поки немає.
+            </div>
+          ) : (
+            <div>
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="border-b border-slate-100 px-5 py-4 last:border-b-0"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="font-semibold">{comment.section}</div>
 
-                    <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                      {comment.text}
-                    </p>
+                      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                        {comment.text}
+                      </p>
+                    </div>
+
+                    <Badge
+                      variant={getCommentStatusVariant(comment.status)}
+                    >
+                      {getCommentStatusLabel(comment.status)}
+                    </Badge>
                   </div>
-
-                  <Badge
-                    variant={
-                      comment.status === "resolved"
-                        ? "success"
-                        : comment.status === "returned"
-                          ? "danger"
-                          : "warning"
-                    }
-                  >
-                    {comment.status === "open"
-                      ? "Відкрите"
-                      : comment.status === "resolved"
-                        ? "Відпрацьоване"
-                        : "Повернено"}
-                  </Badge>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
       )}
 
       {activeTab === "documents" && (
-        <Card className="overflow-hidden">
-          <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
-            <h2 className="font-semibold">Документи проєкту</h2>
+        <div className="flex flex-col gap-5">
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
+              <h2 className="font-semibold">Документи проєкту</h2>
 
-            {createCommentAction && (
-              <AddCommentButton
-                projectId={project.id}
-                documents={documents}
-                createCommentAction={createCommentAction}
-              />
-            )}
-          </div>
+              {createCommentAction && (
+                <AddCommentButton
+                  projectId={project.id}
+                  documents={documents}
+                  createCommentAction={createCommentAction}
+                />
+              )}
+            </div>
 
-          <div>
-            {documents.map((document) => (
-              <div
-                key={document.id}
-                className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0"
-              >
-                <div>
-                  <div className="font-semibold">{document.name}</div>
-
-                  <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                    {document.type}
-                  </div>
-                </div>
-
-                <Badge
-                  variant={
-                    document.status === "approved"
-                      ? "success"
-                      : document.status === "submitted"
-                        ? "info"
-                        : document.status === "rejected"
-                          ? "danger"
-                          : "warning"
-                  }
-                >
-                  {document.status === "draft"
-                    ? "Чернетка"
-                    : document.status === "submitted"
-                      ? "На перевірці"
-                      : document.status === "approved"
-                        ? "Готово"
-                        : document.status === "rejected"
-                          ? "Відхилено"
-                          : "Архів"}
-                </Badge>
+            {documents.length === 0 ? (
+              <div className="px-5 py-6 text-sm text-[var(--color-text-secondary)]">
+                Документів поки немає.
               </div>
-            ))}
-          </div>
-        </Card>
+            ) : (
+              <div>
+                {documents.map((document) => {
+                  const isSelected =
+                    document.id === selectedDocumentId;
+
+                  return (
+                    <div
+                      key={document.id}
+                      className={`flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0 ${
+                        isSelected ? "bg-slate-50" : ""
+                      }`}
+                    >
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedDocumentId((currentId) =>
+                              currentId === document.id
+                                ? null
+                                : document.id,
+                            )
+                          }
+                          className="text-left font-semibold hover:text-[var(--color-accent)]"
+                        >
+                          {document.name}
+                        </button>
+
+                        <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                          {document.type}
+                        </div>
+                      </div>
+
+                      <Badge
+                        variant={getDocumentStatusVariant(
+                          document.status,
+                        )}
+                      >
+                        {getDocumentStatusLabel(document.status)}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {selectedDocument && (
+            <DocumentVersions
+              key={selectedDocument.id}
+              documentId={selectedDocument.id}
+              documentName={selectedDocument.name}
+              canUpload={canUploadDocumentVersion}
+            />
+          )}
+        </div>
       )}
 
       {activeTab === "journal" && (
@@ -288,7 +364,7 @@ export function ProjectDashboardDetailView({
                     {log.entityType === "COMMENT" && (
                       <button
                         type="button"
-                        onClick={() => setActiveTab("remarks")}
+                        onClick={() => handleTabChange("remarks")}
                         className="text-sm font-semibold text-[var(--color-accent)] hover:underline"
                       >
                         Перейти до зауважень
@@ -298,7 +374,7 @@ export function ProjectDashboardDetailView({
                     {log.entityType === "DOCUMENT" && (
                       <button
                         type="button"
-                        onClick={() => setActiveTab("documents")}
+                        onClick={() => handleTabChange("documents")}
                         className="text-sm font-semibold text-[var(--color-accent)] hover:underline"
                       >
                         Відкрити документи
@@ -308,7 +384,7 @@ export function ProjectDashboardDetailView({
                     {log.entityType === "PROJECT" && (
                       <button
                         type="button"
-                        onClick={() => setActiveTab("overview")}
+                        onClick={() => handleTabChange("overview")}
                         className="text-sm font-semibold text-[var(--color-accent)] hover:underline"
                       >
                         Відкрити огляд

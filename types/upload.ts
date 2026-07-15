@@ -26,3 +26,29 @@ export type CompleteDocumentUploadResponse = {
   versionId: string;
   version: number;
 };
+
+export type PresignDocumentVersionUploadRequest = {
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+};
+
+export type PresignDocumentVersionUploadResponse = {
+  uploadUrl: string;
+  objectKey: string;
+  expiresIn: number;
+};
+
+export type CompleteDocumentVersionUploadRequest = {
+  objectKey: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  checksum?: string;
+};
+
+export type CompleteDocumentVersionUploadResponse = {
+  documentId: string;
+  versionId: string;
+  version: number;
+};
