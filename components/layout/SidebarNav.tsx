@@ -72,6 +72,10 @@ const navByRole = {
     },
     { label: "Налаштування", href: "/dashboard/archivist/settings", icon: FiSettings },
   ],
+
+  client: [
+    { label: "Мої проєкти", href: "/dashboard/client", icon: FiBriefcase },
+  ],
 };
 
 export function SidebarNav({ role }: SidebarNavProps) {
@@ -85,7 +89,7 @@ export function SidebarNav({ role }: SidebarNavProps) {
           label={item.label}
           href={item.href}
           icon={item.icon}
-          badge={item.badge}
+          badge={"badge" in item ? item.badge : undefined}
         />
       ))}
     </div>

@@ -7,6 +7,11 @@ import { getProjectById } from "@/lib/projects";
 import { getCommentsByProjectId } from "@/lib/comments";
 import { getProjectAuditLogs } from "@/lib/audit";
 
+import {
+  publishDocumentToClient,
+  unpublishDocumentFromClient,
+} from "./actions";
+
 type PageProps = {
   params: Promise<{
     id: string;
@@ -35,6 +40,8 @@ export default async function HeadProjectDetailPage({ params }: PageProps) {
         comments={comments}
         auditLogs={auditLogs}
         backHref="/dashboard/head"
+        publishDocumentAction={publishDocumentToClient}
+        unpublishDocumentAction={unpublishDocumentFromClient}
       />
     </DashboardLayout>
   );

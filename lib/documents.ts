@@ -31,6 +31,7 @@ export async function getDocuments(): Promise<DocumentItem[]> {
     project: document.project.name,
     type: getDocumentType(document.title),
     status: mapDocumentStatus(document.status),
+    isPublishedToClient: document.isPublishedToClient,
   }));
 }
 
@@ -55,5 +56,6 @@ export async function getDocumentsByProjectId(
     project: document.project.name,
     type: getDocumentType(document.title),
     status: mapDocumentStatus(document.status),
+    isPublishedToClient: document.isPublishedToClient,
   }));
 }

@@ -5,7 +5,12 @@ import { SidebarNav } from "./SidebarNav";
 import type { UserRole } from "@/app/generated/prisma/client";
 import { logout } from "@/app/dashboard/actions";
 
-export type DashboardRole = "head" | "expert" | "designer" | "archivist";
+export type DashboardRole =
+  | "head"
+  | "expert"
+  | "designer"
+  | "archivist"
+  | "client";
 
 type SidebarProps = {
   role: DashboardRole;
@@ -21,6 +26,7 @@ const dashboardRoleByUserRole: Partial<Record<UserRole, DashboardRole>> = {
   EXPERT: "expert",
   DESIGNER: "designer",
   ARCHIVIST: "archivist",
+  CLIENT: "client",
 };
 
 export function getDashboardRole(role: UserRole) {

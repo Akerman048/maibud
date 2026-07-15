@@ -11,6 +11,7 @@ export type DocumentItem = {
   project: string;
   type: string;
   status: DocumentStatus;
+  isPublishedToClient: boolean;
 };
 
 export type DocumentVersionItem = {

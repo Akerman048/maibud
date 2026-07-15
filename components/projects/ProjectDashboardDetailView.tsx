@@ -23,6 +23,8 @@ type ProjectDashboardDetailViewProps = {
   backHref: string;
   createCommentAction?: (formData: FormData) => Promise<void>;
   canUploadDocumentVersion?: boolean;
+  publishDocumentAction?: (documentId: string) => Promise<void>;
+  unpublishDocumentAction?: (documentId: string) => Promise<void>;
 };
 
 type ProjectTab = "overview" | "remarks" | "documents" | "journal";
@@ -96,6 +98,8 @@ export function ProjectDashboardDetailView({
   backHref,
   createCommentAction,
   canUploadDocumentVersion = false,
+  publishDocumentAction,
+  unpublishDocumentAction,
 }: ProjectDashboardDetailViewProps) {
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
@@ -299,13 +303,51 @@ export function ProjectDashboardDetailView({
                         </div>
                       </div>
 
-                      <Badge
-                        variant={getDocumentStatusVariant(
-                          document.status,
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        {document.isPublishedToClient && (
+                          <Badge variant="success">Для клієнта</Badge>
                         )}
-                      >
-                        {getDocumentStatusLabel(document.status)}
-                      </Badge>
+
+                        <Badge
+                          variant={getDocumentStatusVariant(
+                            document.status,
+                          )}
+                        >
+                          {getDocumentStatusLabel(document.status)}
+                        </Badge>
+
+                        {document.isPublishedToClient
+                          ? unpublishDocumentAction && (
+                              <form
+                                action={unpublishDocumentAction.bind(
+                                  null,
+                                  document.id,
+                                )}
+                              >
+                                <button
+                                  type="submit"
+                                  className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
+                                >
+                                  Скасувати публікацію
+                                </button>
+                              </form>
+                            )
+                          : publishDocumentAction && (
+                              <form
+                                action={publishDocumentAction.bind(
+                                  null,
+                                  document.id,
+                                )}
+                              >
+                                <button
+                                  type="submit"
+                                  className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-slate-50"
+                                >
+                                  Опублікувати для клієнта
+                                </button>
+                              </form>
+                            )}
+                      </div>
                     </div>
                   );
                 })}

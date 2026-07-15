@@ -6,6 +6,10 @@ import { ProjectDashboardDetailView } from "@/components/projects/ProjectDashboa
 import { getDocumentsByProjectId } from "@/lib/documents";
 import { getCommentsByProjectId } from "@/lib/comments";
 import { getProjectAuditLogs } from "@/lib/audit";
+import {
+  publishDocumentToClient,
+  unpublishDocumentFromClient,
+} from "@/app/dashboard/head/projects/[id]/actions";
 
 type PageProps = {
   params: Promise<{
@@ -37,6 +41,8 @@ export default async function ArchivistProjectDetailPage({
         comments={comments}
         backHref="/dashboard/archivist/projects"
         auditLogs={auditLogs}
+        publishDocumentAction={publishDocumentToClient}
+        unpublishDocumentAction={unpublishDocumentFromClient}
       />
     </DashboardLayout>
   );

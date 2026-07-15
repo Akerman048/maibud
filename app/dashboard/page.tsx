@@ -25,5 +25,9 @@ export default async function DashboardPage() {
     redirect("/dashboard/archivist");
   }
 
+  if (session.user.role === "CLIENT") {
+    redirect("/dashboard/client");
+  }
+
   redirect("/project/inactive");
 }

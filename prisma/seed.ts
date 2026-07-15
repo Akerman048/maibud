@@ -61,21 +61,22 @@ async function main() {
     },
   });
 
-  await prisma.user.createMany({
-    data: [
-      {
-        name: "Іванов Дмитро",
-        email: "dmytro.ivanov@example.com",
-        role: UserRole.ARCHIVIST,
-        passwordHash: demoPasswordHash,
-      },
-      {
-        name: "Бондаренко Марія",
-        email: "mariia.bondarenko@example.com",
-        role: UserRole.CLIENT,
-        passwordHash: demoPasswordHash,
-      },
-    ],
+  await prisma.user.create({
+    data: {
+      name: "Іванов Дмитро",
+      email: "dmytro.ivanov@example.com",
+      role: UserRole.ARCHIVIST,
+      passwordHash: demoPasswordHash,
+    },
+  });
+
+  const client = await prisma.user.create({
+    data: {
+      name: "Іваненко Андрій",
+      email: "andrii.ivanenko@example.com",
+      role: UserRole.CLIENT,
+      passwordHash: demoPasswordHash,
+    },
   });
 
   const projects = await Promise.all([
@@ -177,6 +178,14 @@ await prisma.comment.createMany({
       ],
     });
   }
+
+  await prisma.projectMember.create({
+    data: {
+      userId: client.id,
+      projectId: projects[0].id,
+      role: UserRole.CLIENT,
+    },
+  });
 
   console.log("Seed completed");
 }
