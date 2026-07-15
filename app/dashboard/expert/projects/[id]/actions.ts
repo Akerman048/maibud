@@ -3,9 +3,12 @@
 import { revalidatePath } from "next/cache";
 
 import { UserRole } from "@/app/generated/prisma/client";
+import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 export async function createComment(formData: FormData) {
+  const currentUser = await requireRole([UserRole.EXPERT]);
+
   const documentId = String(formData.get("documentId") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
   const projectId = String(formData.get("projectId") ?? "").trim();
@@ -14,14 +17,25 @@ export async function createComment(formData: FormData) {
     throw new Error("Заповніть усі поля");
   }
 
-  const expert = await prisma.user.findFirst({
+  const document = await prisma.document.findFirst({
     where: {
-      role: UserRole.EXPERT,
+      id: documentId,
+      projectId,
+      project: {
+        members: {
+          some: {
+            userId: currentUser.id,
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
     },
   });
 
-  if (!expert) {
-    throw new Error("Expert not found");
+  if (!document) {
+    throw new Error("Document not found or access denied");
   }
 
   await prisma.$transaction(async (tx) => {
@@ -29,7 +43,7 @@ export async function createComment(formData: FormData) {
       data: {
         documentId,
         content,
-        authorId: expert.id,
+        authorId: currentUser.id,
       },
     });
 
@@ -38,7 +52,7 @@ export async function createComment(formData: FormData) {
         action: "Додано зауваження до документа",
         entityType: "COMMENT",
         entityId: comment.id,
-        userId: expert.id,
+        userId: currentUser.id,
         projectId,
       },
     });

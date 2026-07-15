@@ -5,8 +5,12 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 
+import { UserRole } from "@/app/generated/prisma/client";
+import { getAuthorizationErrorResponse } from "@/lib/api-error";
+import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
+
 import type {
   PresignDocumentUploadRequest,
   PresignDocumentUploadResponse,
@@ -27,8 +31,13 @@ const ALLOWED_MIME_TYPES = new Set([
 const DEFAULT_MAX_FILE_SIZE = 25 * 1024 * 1024;
 const PRESIGNED_URL_EXPIRES_IN = 5 * 60;
 
+function normalizeContentType(contentType: string | undefined) {
+  return contentType?.split(";")[0]?.trim().toLowerCase() ?? "";
+}
+
 function sanitizeFileName(fileName: string) {
   const extension = path.extname(fileName).toLowerCase();
+
   const baseName = path
     .basename(fileName, extension)
     .normalize("NFKD")
@@ -41,96 +50,152 @@ function sanitizeFileName(fileName: string) {
 }
 
 export async function POST(request: Request) {
-  let body: PresignDocumentUploadRequest;
-
   try {
-    body = (await request.json()) as PresignDocumentUploadRequest;
-  } catch {
+    const currentUser = await requireRole([UserRole.DESIGNER]);
+
+    let body: PresignDocumentUploadRequest;
+
+    try {
+      body = (await request.json()) as PresignDocumentUploadRequest;
+    } catch {
+      return NextResponse.json(
+        {
+          error: "Invalid JSON body",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const projectId = body.projectId?.trim();
+    const fileName = body.fileName?.trim();
+    const mimeType = normalizeContentType(body.mimeType);
+    const fileSize = Number(body.fileSize);
+
+    if (
+      !projectId ||
+      !fileName ||
+      !mimeType ||
+      !Number.isSafeInteger(fileSize)
+    ) {
+      return NextResponse.json(
+        {
+          error: "Invalid upload metadata",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const maxFileSize =
+      Number(process.env.MAX_DOCUMENT_FILE_SIZE) ||
+      DEFAULT_MAX_FILE_SIZE;
+
+    if (fileSize <= 0 || fileSize > maxFileSize) {
+      return NextResponse.json(
+        {
+          error: `File must be smaller than ${maxFileSize} bytes`,
+        },
+        {
+          status: 413,
+        },
+      );
+    }
+
+    if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+      return NextResponse.json(
+        {
+          error: "Unsupported file type",
+        },
+        {
+          status: 415,
+        },
+      );
+    }
+
+    const project = await prisma.project.findFirst({
+      where: {
+        id: projectId,
+        members: {
+          some: {
+            userId: currentUser.id,
+            role: UserRole.DESIGNER,
+          },
+        },
+      },
+      select: {
+        id: true,
+        organizationId: true,
+      },
+    });
+
+    if (!project) {
+      return NextResponse.json(
+        {
+          error: "Project not found or access denied",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    const bucket = process.env.AWS_S3_BUCKET;
+
+    if (!bucket) {
+      throw new Error("AWS_S3_BUCKET is not configured");
+    }
+
+    const safeFileName = sanitizeFileName(fileName);
+
+    const objectKey = [
+      "organizations",
+      project.organizationId,
+      "projects",
+      project.id,
+      "pending",
+      randomUUID(),
+      safeFileName,
+    ].join("/");
+
+    const uploadUrl = await getSignedUrl(
+      s3,
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: objectKey,
+        ContentType: mimeType,
+      }),
+      {
+        expiresIn: PRESIGNED_URL_EXPIRES_IN,
+      },
+    );
+
+    const response: PresignDocumentUploadResponse = {
+      uploadUrl,
+      objectKey,
+      expiresIn: PRESIGNED_URL_EXPIRES_IN,
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    const authorizationResponse =
+      getAuthorizationErrorResponse(error);
+
+    if (authorizationResponse) {
+      return authorizationResponse;
+    }
+
+    console.error("Create document presigned URL failed", error);
+
     return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
+      {
+        error: "Internal server error",
+      },
+      {
+        status: 500,
+      },
     );
   }
-
-  const projectId = body.projectId?.trim();
-  const fileName = body.fileName?.trim();
-  const mimeType = body.mimeType?.trim();
-  const fileSize = Number(body.fileSize);
-
-  if (!projectId || !fileName || !mimeType || !Number.isFinite(fileSize)) {
-    return NextResponse.json(
-      { error: "Invalid upload metadata" },
-      { status: 400 },
-    );
-  }
-
-  const maxFileSize =
-    Number(process.env.MAX_DOCUMENT_FILE_SIZE) || DEFAULT_MAX_FILE_SIZE;
-
-  if (fileSize <= 0 || fileSize > maxFileSize) {
-    return NextResponse.json(
-      { error: `File must be smaller than ${maxFileSize} bytes` },
-      { status: 413 },
-    );
-  }
-
-  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
-    return NextResponse.json(
-      { error: "Unsupported file type" },
-      { status: 415 },
-    );
-  }
-
-  const project = await prisma.project.findUnique({
-    where: {
-      id: projectId,
-    },
-    select: {
-      id: true,
-      organizationId: true,
-    },
-  });
-
-  if (!project) {
-    return NextResponse.json(
-      { error: "Project not found" },
-      { status: 404 },
-    );
-  }
-
-  const bucket = process.env.AWS_S3_BUCKET;
-
-  if (!bucket) {
-    throw new Error("AWS_S3_BUCKET is not configured");
-  }
-
-  const safeFileName = sanitizeFileName(fileName);
-
-  const objectKey = [
-    "organizations",
-    project.organizationId,
-    "projects",
-    project.id,
-    "pending",
-    randomUUID(),
-    safeFileName,
-  ].join("/");
-
-  const command = new PutObjectCommand({
-    Bucket: bucket,
-    Key: objectKey,
-    ContentType: mimeType,
-  });
-
-  const uploadUrl = await getSignedUrl(s3, command, {
-    expiresIn: PRESIGNED_URL_EXPIRES_IN,
-  });
-
-  const response: PresignDocumentUploadResponse = {
-    uploadUrl,
-    objectKey,
-    expiresIn: PRESIGNED_URL_EXPIRES_IN,
-  };
-
-  return NextResponse.json(response);
 }

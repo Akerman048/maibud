@@ -2,6 +2,9 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 
+import { UserRole } from "@/app/generated/prisma/client";
+import { getAuthorizationErrorResponse } from "@/lib/api-error";
+import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
 
@@ -18,50 +21,73 @@ export async function GET(
   _request: Request,
   context: RouteContext,
 ) {
-  const { id: documentId, versionId } = await context.params;
+  try {
+    await requireRole([
+      UserRole.HEAD,
+      UserRole.EXPERT,
+      UserRole.DESIGNER,
+      UserRole.ARCHIVIST,
+    ]);
 
-  const version = await prisma.documentVersion.findFirst({
-    where: {
-      id: versionId,
-      documentId,
-    },
-    select: {
-      objectKey: true,
-      fileName: true,
-      mimeType: true,
-    },
-  });
+    const { id: documentId, versionId } = await context.params;
 
-  if (!version) {
+    const version = await prisma.documentVersion.findFirst({
+      where: {
+        id: versionId,
+        documentId,
+      },
+      select: {
+        objectKey: true,
+        fileName: true,
+        mimeType: true,
+      },
+    });
+
+    if (!version) {
+      return NextResponse.json(
+        { error: "Document version not found" },
+        { status: 404 },
+      );
+    }
+
+    const bucket = process.env.AWS_S3_BUCKET;
+
+    if (!bucket) {
+      throw new Error("AWS_S3_BUCKET is not configured");
+    }
+
+    const downloadUrl = await getSignedUrl(
+      s3,
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: version.objectKey,
+        ResponseContentType: version.mimeType,
+        ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(
+          version.fileName,
+        )}`,
+      }),
+      {
+        expiresIn: DOWNLOAD_URL_EXPIRES_IN,
+      },
+    );
+
+    return NextResponse.json({
+      downloadUrl,
+      expiresIn: DOWNLOAD_URL_EXPIRES_IN,
+    });
+  } catch (error) {
+    const authorizationResponse =
+      getAuthorizationErrorResponse(error);
+
+    if (authorizationResponse) {
+      return authorizationResponse;
+    }
+
+    console.error("Get document download URL failed", error);
+
     return NextResponse.json(
-      { error: "Document version not found" },
-      { status: 404 },
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
-
-  const bucket = process.env.AWS_S3_BUCKET;
-
-  if (!bucket) {
-    throw new Error("AWS_S3_BUCKET is not configured");
-  }
-
-  const downloadUrl = await getSignedUrl(
-    s3,
-    new GetObjectCommand({
-      Bucket: bucket,
-      Key: version.objectKey,
-      ResponseContentType: version.mimeType,
-      ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(
-        version.fileName,
-      )}`,
-    }),
-    {
-      expiresIn: DOWNLOAD_URL_EXPIRES_IN,
-    },
-  );
-
-  return NextResponse.json({
-    downloadUrl,
-    expiresIn: DOWNLOAD_URL_EXPIRES_IN,
-  });
 }

@@ -32,10 +32,11 @@ enum DocumentStatus {
 }
 
 model User {
-  id    String   @id @default(cuid())
-  name  String
-  email String   @unique
-  role  UserRole @default(DESIGNER)
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String?
+  role         UserRole @default(DESIGNER)
 
   memberships      ProjectMember[]
   documents        Document[]

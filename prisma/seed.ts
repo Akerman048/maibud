@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
+import { hash } from "bcryptjs";
 import {
   PrismaClient,
   ProjectStatus,
@@ -16,6 +17,8 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
+  const demoPasswordHash = await hash("Demo1234!", 12);
+
   await prisma.comment.deleteMany();
   await prisma.documentVersion.deleteMany();
   await prisma.document.deleteMany();
@@ -36,6 +39,7 @@ async function main() {
       name: "Петренко Сергій",
       email: "serhii.petrenko@example.com",
       role: UserRole.HEAD,
+      passwordHash: demoPasswordHash,
     },
   });
 
@@ -44,6 +48,7 @@ async function main() {
       name: "Коваль Олег",
       email: "oleh.koval@example.com",
       role: UserRole.EXPERT,
+      passwordHash: demoPasswordHash,
     },
   });
 
@@ -52,6 +57,7 @@ async function main() {
       name: "Романенко Павло",
       email: "pavlo.romanenko@example.com",
       role: UserRole.DESIGNER,
+      passwordHash: demoPasswordHash,
     },
   });
 

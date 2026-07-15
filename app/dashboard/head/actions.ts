@@ -4,9 +4,12 @@
 import { revalidatePath } from "next/cache";
 
 import { ProjectStatus, UserRole } from "@/app/generated/prisma/client";
+import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 export async function createProject(formData: FormData) {
+  const currentUser = await requireRole([UserRole.HEAD]);
+
   const name = String(formData.get("name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const customer = String(formData.get("customer") ?? "").trim();
@@ -28,16 +31,6 @@ export async function createProject(formData: FormData) {
 
   if (!organization) {
     throw new Error("Organization not found");
-  }
-
-  const head = await prisma.user.findFirst({
-    where: {
-      role: UserRole.HEAD,
-    },
-  });
-
-  if (!head) {
-    throw new Error("Head user not found");
   }
 
   const expert = await prisma.user.findFirst({
@@ -64,7 +57,7 @@ export async function createProject(formData: FormData) {
         members: {
           create: [
             {
-              userId: head.id,
+              userId: currentUser.id,
               role: UserRole.HEAD,
             },
             {
@@ -81,7 +74,7 @@ export async function createProject(formData: FormData) {
         action: "Створено проєкт",
         entityType: "PROJECT",
         entityId: createdProject.id,
-        userId: head.id,
+        userId: currentUser.id,
         projectId: createdProject.id,
       },
     });
@@ -92,6 +85,8 @@ export async function createProject(formData: FormData) {
 }
 
 export async function updateProject(formData: FormData) {
+  const currentUser = await requireRole([UserRole.HEAD]);
+
   const id = String(formData.get("id") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
@@ -118,16 +113,6 @@ export async function updateProject(formData: FormData) {
     throw new Error("Некоректна дата завершення");
   }
 
-  const head = await prisma.user.findFirst({
-    where: {
-      role: UserRole.HEAD,
-    },
-  });
-
-  if (!head) {
-    throw new Error("Head user not found");
-  }
-
   const expert = await prisma.user.findFirst({
     where: {
       id: expertId,
@@ -139,14 +124,19 @@ export async function updateProject(formData: FormData) {
     throw new Error("Expert not found");
   }
 
-  const project = await prisma.project.findUnique({
+  const project = await prisma.project.findFirst({
     where: {
       id,
+      members: {
+        some: {
+          userId: currentUser.id,
+        },
+      },
     },
   });
 
   if (!project) {
-    throw new Error("Project not found");
+    throw new Error("Project not found or access denied");
   }
 
   await prisma.$transaction(async (tx) => {
@@ -183,7 +173,7 @@ export async function updateProject(formData: FormData) {
         action: "Оновлено дані проєкту",
         entityType: "PROJECT",
         entityId: id,
-        userId: head.id,
+        userId: currentUser.id,
         projectId: id,
       },
     });
@@ -195,28 +185,25 @@ export async function updateProject(formData: FormData) {
 }
 
 export async function archiveProject(projectId: string) {
+  const currentUser = await requireRole([UserRole.HEAD]);
+
   if (!projectId) {
     throw new Error("Project id is required");
   }
 
-  const project = await prisma.project.findUnique({
+  const project = await prisma.project.findFirst({
     where: {
       id: projectId,
+      members: {
+        some: {
+          userId: currentUser.id,
+        },
+      },
     },
   });
 
   if (!project) {
-    throw new Error("Project not found");
-  }
-
-  const head = await prisma.user.findFirst({
-    where: {
-      role: UserRole.HEAD,
-    },
-  });
-
-  if (!head) {
-    throw new Error("Head user not found");
+    throw new Error("Project not found or access denied");
   }
 
   await prisma.$transaction(async (tx) => {
@@ -234,7 +221,7 @@ export async function archiveProject(projectId: string) {
         action: "Проєкт переміщено в архів",
         entityType: "PROJECT",
         entityId: projectId,
-        userId: head.id,
+        userId: currentUser.id,
         projectId,
       },
     });

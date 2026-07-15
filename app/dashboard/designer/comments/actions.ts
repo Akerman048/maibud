@@ -6,18 +6,30 @@ import {
   CommentStatus,
   UserRole,
 } from "@/app/generated/prisma/client";
+import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 export async function resolveComment(formData: FormData) {
+  const currentUser = await requireRole([UserRole.DESIGNER]);
+
   const commentId = String(formData.get("commentId") ?? "").trim();
 
   if (!commentId) {
     throw new Error("Comment id is required");
   }
 
-  const comment = await prisma.comment.findUnique({
+  const comment = await prisma.comment.findFirst({
     where: {
       id: commentId,
+      document: {
+        project: {
+          members: {
+            some: {
+              userId: currentUser.id,
+            },
+          },
+        },
+      },
     },
     include: {
       document: true,
@@ -25,17 +37,7 @@ export async function resolveComment(formData: FormData) {
   });
 
   if (!comment) {
-    throw new Error("Comment not found");
-  }
-
-  const designer = await prisma.user.findFirst({
-    where: {
-      role: UserRole.DESIGNER,
-    },
-  });
-
-  if (!designer) {
-    throw new Error("Designer not found");
+    throw new Error("Comment not found or access denied");
   }
 
   await prisma.$transaction(async (tx) => {
@@ -53,7 +55,7 @@ export async function resolveComment(formData: FormData) {
         action: "Зауваження позначено виконаним",
         entityType: "COMMENT",
         entityId: commentId,
-        userId: designer.id,
+        userId: currentUser.id,
         projectId: comment.document.projectId,
       },
     });
