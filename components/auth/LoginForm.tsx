@@ -2,9 +2,10 @@
 
 import { useActionState } from "react";
 
-import { login, type LoginActionState } from "@/app/login/actions";
+import { login } from "@/app/login/actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import type { LoginActionState } from "@/types/login-action";
 
 const initialState: LoginActionState = {
   error: "",

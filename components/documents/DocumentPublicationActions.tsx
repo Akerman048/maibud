@@ -2,9 +2,9 @@
 
 import { useActionState } from "react";
 
-import type { DocumentPublicationActionState } from "@/app/dashboard/head/projects/[id]/actions";
 import { Button } from "@/components/ui/Button";
 import type { DocumentItem } from "@/types/document";
+import type { DocumentPublicationActionState } from "@/types/document-publication-action";
 
 type DocumentPublicationAction = (
   previousState: DocumentPublicationActionState,

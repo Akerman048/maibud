@@ -4,6 +4,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { hash } from "bcryptjs";
 import {
   CommentThreadStatus,
+  EmailJobStatus,
+  EmailTemplate,
   NotificationType,
   PrismaClient,
   ProjectStatus,
@@ -21,6 +23,7 @@ const prisma = new PrismaClient({
 async function main() {
   const demoPasswordHash = await hash("Demo1234!", 12);
 
+  await prisma.emailJob.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.commentMessage.deleteMany();
   await prisma.commentThread.deleteMany();
@@ -268,6 +271,49 @@ const demoThread = await prisma.commentThread.create({
         message: `${designer.name} має доступ до проєкту «${projects[0].name}».`,
         href: `/dashboard/head/projects/${projects[0].id}`,
         projectId: projects[0].id,
+      },
+    ],
+  });
+
+  await prisma.emailJob.createMany({
+    data: [
+      {
+        template: EmailTemplate.DOCUMENT_SUBMITTED,
+        status: EmailJobStatus.SENT,
+        recipientEmail: expert.email,
+        recipientName: expert.name,
+        subject: "Документ подано на перевірку",
+        payload: { template: "DOCUMENT_SUBMITTED", delivered: true },
+        attempts: 1,
+        sentAt: new Date(),
+        providerMessageId: "demo-message-sent",
+      },
+      {
+        template: EmailTemplate.COMMENT_THREAD_CREATED,
+        status: EmailJobStatus.PENDING,
+        recipientEmail: designer.email,
+        recipientName: designer.name,
+        subject: "Нове зауваження до документа",
+        payload: {
+          recipientName: designer.name,
+          message: "До документа додано нове зауваження.",
+          href: `/dashboard/designer/comments/${demoThread.id}`,
+        },
+      },
+      {
+        template: EmailTemplate.DOCUMENT_PUBLISHED,
+        status: EmailJobStatus.FAILED,
+        recipientEmail: client.email,
+        recipientName: client.name,
+        subject: "Документ опубліковано",
+        payload: {
+          recipientName: client.name,
+          message: "Для вас опубліковано документ.",
+          href: `/dashboard/client/projects/${projects[0].id}`,
+        },
+        attempts: 1,
+        failedAt: new Date(),
+        lastError: "Demo provider failure",
       },
     ],
   });

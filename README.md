@@ -32,7 +32,7 @@ Unit tests exercise deterministic business rules and do not connect to Neon or S
 
 ## Organization invitations
 
-HEAD creates an invitation and assigns its organization role; invitees cannot choose a role themselves. Invitation links contain a one-time raw token, while PostgreSQL stores only its SHA-256 hash. Email delivery is intentionally not connected yet, so the generated URL must be copied and sent manually.
+HEAD creates an invitation and assigns its organization role; invitees cannot choose a role themselves. Invitation links contain a one-time raw token, while the `Invitation` row stores only its SHA-256 hash. The raw link is queued in a short-lived email job during create/resend, and the generated URL is still shown to HEAD as a manual-delivery fallback.
 
 After deploying the organization-membership migration, backfill existing project members without deleting or changing existing data:
 
@@ -58,7 +58,30 @@ The backfill uses `legacyCommentId` as an idempotency marker, does not modify or
 
 Internal notifications are stored in PostgreSQL and are always queried by their owner `userId`. Read state is represented by `readAt`; list pages use server-side filtering and pagination, while DashboardLayout performs one count query for the Sidebar unread badge. Document submission, version upload, review, client publication, comment-thread activity, project membership, invitation acceptance, and project archival create notifications in the same transaction as the business change when possible.
 
-Notification targets are generated from trusted entity ids and role-aware internal routes. Arbitrary external URLs are rejected. Email delivery, polling, WebSocket, and external realtime services are intentionally not part of this module.
+Notification targets are generated from trusted entity ids and role-aware internal routes. Arbitrary external URLs are rejected. Polling, WebSocket, and external realtime services are intentionally not part of this module.
+
+## Email delivery
+
+Email delivery uses a transactional outbox. A business transaction creates the internal `Notification` and its eligible `EmailJob` together; it never calls Resend. The job moves through `PENDING`/`FAILED` → `PROCESSING` → `SENT`, or becomes `CANCELLED` after five attempts. Retries use delays of 1 minute, 5 minutes, 15 minutes, and 1 hour. Stale processing locks are released after 15 minutes, and atomic claims prevent two workers from sending the same job.
+
+Required environment variables:
+
+```bash
+APP_URL=http://localhost:3000
+RESEND_API_KEY=re_placeholder
+EMAIL_FROM="ExpertDesk <notifications@example.com>"
+EMAIL_JOB_SECRET=replace-with-at-least-32-random-characters
+```
+
+Trigger a bounded worker batch with `POST /api/internal/email-jobs/process` and `Authorization: Bearer $EMAIL_JOB_SECRET`, or process one local batch explicitly:
+
+```bash
+pnpm exec tsx scripts/process-email-jobs.ts
+```
+
+The worker is never started by migrations, seed, build, or CI. Resend is initialized lazily only while processing jobs. Users control global, document, comment, and membership email categories from their role-specific settings page. Unsupported/noisy events such as document unpublish and project archive remain internal-only. Invitation resend has a 60-second cooldown, invalidates the previous token, and cancels its unsent email job. Successfully sent and terminally failed jobs replace payload data with sanitized metadata so one-time invitation links are not retained.
+
+The optional HEAD email-job observability page is intentionally deferred; inspect operational metrics through database tooling without exposing payloads or invitation URLs in the application UI.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

@@ -3,9 +3,9 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import type { DocumentReviewActionState } from "@/app/dashboard/expert/projects/[id]/actions";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import type { DocumentReviewActionState } from "@/types/document-review-action";
 
 type DocumentReviewAction = (
   previousState: DocumentReviewActionState,

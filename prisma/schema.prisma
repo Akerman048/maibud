@@ -62,6 +62,30 @@ enum NotificationType {
   PROJECT_RESTORED
 }
 
+enum EmailJobStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum EmailTemplate {
+  INVITATION_CREATED
+  INVITATION_ACCEPTED
+  DOCUMENT_SUBMITTED
+  DOCUMENT_VERSION_UPLOADED
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+  DOCUMENT_PUBLISHED
+  COMMENT_THREAD_CREATED
+  COMMENT_REPLY_CREATED
+  COMMENT_THREAD_RESOLVED
+  COMMENT_THREAD_RETURNED
+  PROJECT_MEMBER_ADDED
+  PROJECT_MEMBER_REMOVED
+}
+
 model User {
   id           String    @id @default(cuid())
   name         String
@@ -70,6 +94,11 @@ model User {
   role         UserRole  @default(DESIGNER)
   isActive     Boolean   @default(true)
   disabledAt   DateTime?
+
+  emailNotificationsEnabled Boolean @default(true)
+  emailDocumentUpdates      Boolean @default(true)
+  emailCommentUpdates       Boolean @default(true)
+  emailMembershipUpdates    Boolean @default(true)
 
   memberships             ProjectMember[]
   organizationMemberships OrganizationMember[]
@@ -369,6 +398,8 @@ model Notification {
 
   readAt DateTime?
 
+  emailJobs EmailJob[]
+
   createdAt DateTime @default(now())
 
   @@index([userId, readAt, createdAt])
@@ -376,6 +407,42 @@ model Notification {
   @@index([projectId, createdAt])
   @@index([documentId, createdAt])
   @@index([commentThreadId, createdAt])
+}
+
+model EmailJob {
+  id String @id @default(cuid())
+
+  template EmailTemplate
+  status   EmailJobStatus @default(PENDING)
+
+  recipientEmail String
+  recipientName  String?
+
+  subject String
+  payload Json
+
+  attempts      Int      @default(0)
+  maxAttempts   Int      @default(5)
+  nextAttemptAt DateTime @default(now())
+
+  lockedAt DateTime?
+  lockedBy String?
+
+  sentAt    DateTime?
+  failedAt  DateTime?
+  lastError String?
+
+  providerMessageId String?
+
+  notificationId String?
+  notification   Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([recipientEmail, createdAt])
+  @@index([notificationId])
 }
 
 enum CommentStatus {

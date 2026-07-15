@@ -78,6 +78,7 @@ const navByRole = {
   client: [
     { label: "Мої проєкти", href: "/dashboard/client", icon: FiBriefcase },
     { label: "Сповіщення", href: "/dashboard/client/notifications", icon: FiBell },
+    { label: "Налаштування", href: "/dashboard/client/settings", icon: FiSettings },
   ],
 };
 

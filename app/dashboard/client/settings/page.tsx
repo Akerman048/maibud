@@ -6,15 +6,14 @@ import { SettingsView } from "@/components/settings/SettingsView";
 import { getEmailSettings } from "@/lib/email/settings-data";
 import { requireDashboardRole } from "@/lib/require-dashboard-role";
 
-export default async function HeadSettingsPage() {
-  const user = await requireDashboardRole(UserRole.HEAD);
+export default async function ClientSettingsPage() {
+  const user = await requireDashboardRole(UserRole.CLIENT);
   const emailSettings = await getEmailSettings(user.id);
 
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-[22px]">
         <Header title="Налаштування" />
-
         <SettingsView
           name={user.name ?? ""}
           role={user.role}
