@@ -7,6 +7,7 @@ import {
   AuthorizationError,
   requireRole,
 } from "@/lib/auth-guard";
+import { canReviewDocument } from "@/lib/document-workflow";
 import { prisma } from "@/lib/prisma";
 
 export type DocumentReviewActionState = {
@@ -73,7 +74,7 @@ async function getSubmittedDocumentForExpert(
     );
   }
 
-  if (document.status !== "SUBMITTED") {
+  if (!canReviewDocument(document.status)) {
     throw new DocumentReviewError(
       "Документ уже оброблено або він не перебуває на перевірці.",
     );

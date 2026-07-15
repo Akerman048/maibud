@@ -10,6 +10,11 @@ import {
 } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
 import { requireRole } from "@/lib/auth-guard";
+import {
+  canUploadDocumentVersion,
+  DocumentWorkflowError,
+  getNewVersionTransition,
+} from "@/lib/document-workflow";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
 
@@ -188,7 +193,7 @@ export async function POST(
       );
     }
 
-    if (document.status === "ARCHIVED") {
+    if (!canUploadDocumentVersion(document.status)) {
       return NextResponse.json(
         {
           error: "Archived documents cannot be changed",
@@ -325,18 +330,13 @@ export async function POST(
             },
             select: {
               status: true,
+              isPublishedToClient: true,
             },
           });
 
           if (!currentDocument) {
             throw new DocumentWorkflowConflictError(
               "Document no longer exists",
-            );
-          }
-
-          if (currentDocument.status === "ARCHIVED") {
-            throw new DocumentWorkflowConflictError(
-              "Archived documents cannot be changed",
             );
           }
 
@@ -355,6 +355,12 @@ export async function POST(
 
           const nextVersion =
             (latestVersion?.version ?? 0) + 1;
+          const transition = getNewVersionTransition({
+            status: currentDocument.status,
+            isPublishedToClient:
+              currentDocument.isPublishedToClient,
+            nextVersion,
+          });
 
           const version = await tx.documentVersion.create({
             data: {
@@ -369,30 +375,25 @@ export async function POST(
             },
           });
 
-          let auditAction =
-            `Завантажено версію v${nextVersion} документа`;
-
-          if (currentDocument.status === "REJECTED") {
-            auditAction =
-              "Завантажено нову версію та повторно подано документ на перевірку";
-          } else if (currentDocument.status === "DRAFT") {
-            auditAction = "Документ подано на перевірку";
-          } else if (currentDocument.status === "APPROVED") {
-            auditAction =
-              "Завантажено нову версію погодженого документа та повторно подано на перевірку";
-          }
-
-          if (currentDocument.status !== "SUBMITTED") {
+          if (
+            transition.nextStatus !== currentDocument.status ||
+            transition.clearReview ||
+            transition.clearPublication
+          ) {
             await tx.document.update({
               where: {
                 id: documentId,
               },
               data: {
-                status: "SUBMITTED",
-                reviewedAt: null,
-                reviewedById: null,
-                rejectionReason: null,
-                ...(currentDocument.status === "APPROVED"
+                status: transition.nextStatus,
+                ...(transition.clearReview
+                  ? {
+                      reviewedAt: null,
+                      reviewedById: null,
+                      rejectionReason: null,
+                    }
+                  : {}),
+                ...(transition.clearPublication
                   ? {
                       isPublishedToClient: false,
                       publishedAt: null,
@@ -405,7 +406,7 @@ export async function POST(
 
           await tx.auditLog.create({
             data: {
-              action: auditAction,
+              action: transition.auditAction,
               entityType: "DOCUMENT",
               entityId: documentId,
               userId: currentUser.id,
@@ -446,7 +447,10 @@ export async function POST(
         );
       }
 
-      if (error instanceof DocumentWorkflowConflictError) {
+      if (
+        error instanceof DocumentWorkflowConflictError ||
+        error instanceof DocumentWorkflowError
+      ) {
         return NextResponse.json(
           {
             error: error.message,
