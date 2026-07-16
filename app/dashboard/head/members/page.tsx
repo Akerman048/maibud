@@ -18,6 +18,7 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { SortSelect } from "@/components/search/SortSelect";
+import { getUserRoleLabel } from "@/lib/user-role";
 
 export default async function HeadMembersPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const currentUser = await requireDashboardRole(UserRole.HEAD);
@@ -29,7 +30,7 @@ export default async function HeadMembersPage({ searchParams }: { searchParams: 
         <Card className="p-8">
           <h1 className="text-xl font-bold">Немає доступної організації</h1>
           <p className="mt-2 text-[var(--color-text-secondary)]">
-            Для керування командою потрібне активне membership із роллю HEAD.
+            Для керування командою потрібне активне членство керівника організації.
           </p>
         </Card>
       </DashboardLayout>
@@ -74,7 +75,7 @@ export default async function HeadMembersPage({ searchParams }: { searchParams: 
           {value("tab") && <input type="hidden" name="tab" value={value("tab")} />}
           {value("invitationPage") && <input type="hidden" name="invitationPage" value={value("invitationPage")} />}
           {value("invitationPageSize") && <input type="hidden" name="invitationPageSize" value={value("invitationPageSize")} />}
-          <label className="sr-only" htmlFor="member-role">Роль</label><Select id="member-role" name="role" defaultValue={rawRole ?? ""} options={[{ value: "", label: "Усі ролі" }, ...Object.values(UserRole).map((role) => ({ value: role, label: role }))]} />
+          <label className="sr-only" htmlFor="member-role">Роль</label><Select id="member-role" name="role" defaultValue={rawRole ?? ""} options={[{ value: "", label: "Усі ролі" }, ...Object.values(UserRole).map((role) => ({ value: role, label: getUserRoleLabel(role) }))]} />
           <label className="sr-only" htmlFor="member-active">Активність</label><Select id="member-active" name="active" defaultValue={active} options={[{ value: "all", label: "Усі учасники" }, { value: "true", label: "Активні" }, { value: "false", label: "Неактивні" }]} />
           <label className="sr-only" htmlFor="member-project">Проєкт</label><Select id="member-project" name="projectId" defaultValue={memberQuery.projectId ?? ""} options={[{ value: "", label: "Усі проєкти" }, ...projects.map((project) => ({ value: project.id, label: project.name }))]} />
           <SortSelect value={memberQuery.sortBy} direction={memberQuery.sortDirection} options={[{ value: "createdAt", label: "За датою" }, { value: "name", label: "За ім’ям" }, { value: "role", label: "За роллю" }]} />

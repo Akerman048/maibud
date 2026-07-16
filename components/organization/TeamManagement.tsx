@@ -145,7 +145,7 @@ function CreateInvitationModal({
   return (
     <Modal
       title="Запросити користувача"
-      description="Роль визначає HEAD. Другого HEAD через цю форму запросити не можна."
+      description="Роль визначає керівник. Другого керівника через цю форму запросити не можна."
       onClose={onClose}
     >
       <form action={formAction} className="flex flex-col gap-4">

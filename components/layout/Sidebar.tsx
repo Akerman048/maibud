@@ -5,6 +5,7 @@ import { SidebarNav } from "./SidebarNav";
 
 import type { UserRole } from "@/app/generated/prisma/client";
 import { logout } from "@/app/dashboard/actions";
+import { getUserRoleLabel } from "@/lib/user-role";
 
 export type DashboardRole =
   | "head"
@@ -97,7 +98,7 @@ export function Sidebar({
           </div>
 
           <div className="mt-0.5 text-[11px] font-semibold text-slate-400">
-            {user.role}
+            {getUserRoleLabel(user.role)}
           </div>
         </div>
       </div>

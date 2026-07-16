@@ -4,8 +4,8 @@ const roleLabels: Record<UserRole, string> = {
   HEAD: "Керівник",
   EXPERT: "Експерт",
   DESIGNER: "Проєктувальник",
-  ARCHIVIST: "Архіваріус",
-  CLIENT: "Клієнт",
+  ARCHIVIST: "Архівіст",
+  CLIENT: "Замовник",
 };
 
 export function getUserRoleLabel(role: UserRole) {
