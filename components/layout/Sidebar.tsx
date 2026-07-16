@@ -4,6 +4,7 @@ import { SidebarNav } from "./SidebarNav";
 
 import type { UserRole } from "@/app/generated/prisma/client";
 import { logout } from "@/app/dashboard/actions";
+import { BRAND_NAME } from "@/lib/brand";
 
 export type DashboardRole =
   | "head"
@@ -57,7 +58,7 @@ export function Sidebar({ role, user, unreadNotificationCount }: SidebarProps) {
           E
         </div>
 
-        <span className="text-[17px] font-bold text-white">ExpertDesk</span>
+        <span className="text-[17px] font-bold text-white">{BRAND_NAME}</span>
       </div>
 
       <SidebarNav

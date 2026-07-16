@@ -1,4 +1,5 @@
 import { FiLink } from "react-icons/fi";
+import { BRAND_NAME } from "@/lib/brand";
 
 export default function InactiveProjectLinkPage() {
   return (
@@ -20,7 +21,7 @@ export default function InactiveProjectLinkPage() {
         <div className="mt-7 text-[13px] text-[var(--color-text-muted)]">
           Powered by{" "}
           <strong className="text-[var(--color-text-secondary)]">
-            ExpertDesk
+            {BRAND_NAME}
           </strong>
         </div>
       </div>

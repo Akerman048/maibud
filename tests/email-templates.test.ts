@@ -6,7 +6,7 @@ import {
   toAbsoluteInternalUrl,
 } from "@/lib/email/templates";
 
-const appUrl = "https://expert-desk.example";
+const appUrl = "https://maibud.example";
 
 describe("email templates", () => {
   it("renders a subject, escaped HTML and a plain-text fallback", () => {
@@ -20,27 +20,30 @@ describe("email templates", () => {
     expect(result.html).toContain("Олег &lt;script&gt;alert(1)&lt;/script&gt;");
     expect(result.html).toContain("Документ &lt;b&gt;готовий&lt;/b&gt;");
     expect(result.html).not.toContain("<script>");
+    expect(result.html).toContain("МайБуд");
+    expect(result.text).toContain("Відкрити МайБуд");
     expect(result.text).toContain(
-      "https://expert-desk.example/dashboard/expert/projects/project-1",
+      "https://maibud.example/dashboard/expert/projects/project-1",
     );
   });
 
   it("renders invitation details and its one-time internal URL", () => {
     const result = renderEmailTemplate("INVITATION_CREATED", {
       recipientName: "Андрій",
-      organizationName: "ExpertDesk Demo",
+      organizationName: "МайБуд Demo",
       role: "CLIENT",
       projectName: "Проєкт A",
       expiresAt: "2026-07-20T10:00:00.000Z",
       href: "/invite/raw-token-for-test",
     }, { appUrl });
 
-    expect(result.subject).toBe("Запрошення до ExpertDesk");
-    expect(result.text).toContain("ExpertDesk Demo");
+    expect(result.subject).toBe("Запрошення до МайБуд");
+    expect(result.text).toContain("МайБуд Demo");
+    expect(result.html).toContain("Це автоматичне повідомлення МайБуд.");
     expect(result.text).toContain("CLIENT");
     expect(result.text).toContain("Проєкт A");
     expect(result.html).toContain(
-      "https://expert-desk.example/invite/raw-token-for-test",
+      "https://maibud.example/invite/raw-token-for-test",
     );
   });
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/brand";
 
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin", "cyrillic"],
@@ -9,8 +10,23 @@ const ibmPlexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "ExpertDesk",
-  description: "Platform for construction expertise management",
+  title: {
+    default: BRAND_NAME,
+    template: `%s | ${BRAND_NAME}`,
+  },
+  description: BRAND_DESCRIPTION,
+  applicationName: BRAND_NAME,
+  openGraph: {
+    title: BRAND_NAME,
+    description: BRAND_DESCRIPTION,
+    type: "website",
+    locale: "uk_UA",
+  },
+  twitter: {
+    card: "summary",
+    title: BRAND_NAME,
+    description: BRAND_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({

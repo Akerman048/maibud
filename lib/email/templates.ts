@@ -1,4 +1,5 @@
 import type { EmailTemplate } from "@/app/generated/prisma/client";
+import { BRAND_NAME } from "@/lib/brand";
 
 type EmailPayload = Record<string, unknown>;
 
@@ -10,7 +11,7 @@ export class EmailTemplateConfigurationError extends Error {
 }
 
 const SUBJECTS: Record<EmailTemplate, string> = {
-  INVITATION_CREATED: "Запрошення до ExpertDesk",
+  INVITATION_CREATED: `Запрошення до ${BRAND_NAME}`,
   INVITATION_ACCEPTED: "Запрошення прийнято",
   DOCUMENT_SUBMITTED: "Документ подано на перевірку",
   DOCUMENT_VERSION_UPLOADED: "Завантажено нову версію документа",
@@ -93,7 +94,7 @@ export function renderEmailTemplate(
   const recipientName = getString(payload, "recipientName", "користувачу");
   const invitation = template === "INVITATION_CREATED";
   const message = invitation
-    ? `Вас запрошено до організації «${getString(payload, "organizationName", "ExpertDesk")}» з роллю ${getString(payload, "role", "учасника")}.`
+    ? `Вас запрошено до організації «${getString(payload, "organizationName", BRAND_NAME)}» з роллю ${getString(payload, "role", "учасника")}.`
     : getString(payload, "message", subject);
   const href = getString(payload, "href");
   const ctaUrl = href ? toAbsoluteInternalUrl(href, options.appUrl) : null;
@@ -108,20 +109,20 @@ export function renderEmailTemplate(
     "",
     message,
     ...details.map((detail) => `\n${detail}`),
-    ctaUrl ? `\nВідкрити ExpertDesk: ${ctaUrl}` : "",
+    ctaUrl ? `\nВідкрити ${BRAND_NAME}: ${ctaUrl}` : "",
   ].filter(Boolean).join("\n");
 
   const html = `<!doctype html>
 <html lang="uk">
   <body style="margin:0;background:#f5f7fa;font-family:Arial,sans-serif;color:#1f2937">
     <main style="max-width:600px;margin:24px auto;background:#fff;padding:32px;border-radius:12px">
-      <p style="font-size:18px;font-weight:700">ExpertDesk</p>
+      <p style="font-size:18px;font-weight:700">${BRAND_NAME}</p>
       <h1 style="font-size:22px">${escapeHtml(subject)}</h1>
       <p>Вітаємо, ${escapeHtml(recipientName)}!</p>
       <p>${escapeHtml(message)}</p>
       ${details.map((detail) => `<p>${escapeHtml(detail)}</p>`).join("")}
-      ${ctaUrl ? `<p><a href="${escapeHtml(ctaUrl)}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px">Відкрити ExpertDesk</a></p>` : ""}
-      <p style="font-size:12px;color:#6b7280">Це автоматичне повідомлення ExpertDesk.</p>
+      ${ctaUrl ? `<p><a href="${escapeHtml(ctaUrl)}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px">Відкрити ${BRAND_NAME}</a></p>` : ""}
+      <p style="font-size:12px;color:#6b7280">Це автоматичне повідомлення ${BRAND_NAME}.</p>
     </main>
   </body>
 </html>`;

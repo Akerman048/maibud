@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { getInvitationByRawToken } from "@/lib/invitation-data";
 import { getUserRoleLabel } from "@/lib/user-role";
+import { BRAND_NAME } from "@/lib/brand";
 
 function InvitationMessage({
   title,
@@ -57,7 +58,7 @@ export default async function InvitationPage({
     return (
       <InvitationMessage
         title="Запрошення вже прийнято"
-        description="Увійдіть у свій обліковий запис, щоб перейти до ExpertDesk."
+        description={`Увійдіть у свій обліковий запис, щоб перейти до ${BRAND_NAME}.`}
       />
     );
   }

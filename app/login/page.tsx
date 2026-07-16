@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Card } from "@/components/ui/Card";
+import { BRAND_NAME } from "@/lib/brand";
 
 export default async function LoginPage({
   searchParams,
@@ -25,7 +26,7 @@ export default async function LoginPage({
               E
             </div>
 
-            <span className="text-lg font-bold">ExpertDesk</span>
+            <span className="text-lg font-bold">{BRAND_NAME}</span>
           </div>
 
           <h1 className="mt-7 text-2xl font-bold">Вхід у систему</h1>

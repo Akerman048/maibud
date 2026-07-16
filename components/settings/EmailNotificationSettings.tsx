@@ -6,6 +6,7 @@ import { updateEmailNotificationSettings } from "@/app/dashboard/settings/email-
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { EmailSettings, EmailSettingsActionState } from "@/types/email";
+import { BRAND_NAME } from "@/lib/brand";
 
 const initialState: EmailSettingsActionState = { success: false, error: "" };
 
@@ -61,7 +62,7 @@ export function EmailNotificationSettings({
         <div>
           <h2 className="text-lg font-semibold">Email-сповіщення</h2>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            Оберіть події, про які ExpertDesk повідомлятиме електронною поштою.
+            Оберіть події, про які {BRAND_NAME} повідомлятиме електронною поштою.
           </p>
         </div>
 
