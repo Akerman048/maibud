@@ -116,3 +116,11 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 Scopes застосовуються в кожному list query: HEAD/ARCHIVIST — лише активна membership їхньої organization, EXPERT/DESIGNER/CLIENT — лише відповідна ProjectMember membership. CLIENT додатково не бачить archive/internal document data; notifications завжди обмежені власником (`Notification.userId`). Для типових scope/filter/order комбінацій додана additive migration `add_search_filter_indexes`. Архів повторно використовує shared query parsing і pagination metadata/UI без зміни archive workflow.
 
 Project-detail document/comment tabs залишаються bounded detail queries (comment lists мають safety cap 100). Окремі URL pagination controls для цих вкладок — follow-up, щоб не розширювати routing refactor цієї зміни; глобальні document і comment lists уже повністю server-side paginated.
+
+## Dashboard statistics and activity
+
+Dashboard кожної ролі показує KPI у власному server-side scope. HEAD використовує одночасно активне `OrganizationMember` і чинну HEAD project-membership policy; ARCHIVIST обмежений активною organization membership; EXPERT, DESIGNER і CLIENT — відповідним `ProjectMember`. Неактивний користувач або неоднозначна organization membership не отримує dashboard data. CLIENT бачить лише активні призначені проєкти, опубліковані погоджені документи та власні непрочитані сповіщення; internal AuditLog, comments, review і archive statistics ізольовані.
+
+Current-state cards позначені «Зараз»: активні/архівовані проєкти, поточні document statuses, відкриті threads, публікації, memberships і unread notifications. Period cards використовують `reviewedAt`, `publishedAt`, `archivedAt` або `DocumentVersion.createdAt` та пояснюють вибраний інтервал. URL-параметр `range=7d|30d|90d|all` є джерелом стану; invalid значення нормалізується до `30d`, а зміна періоду зберігає інші query params.
+
+Internal activity feed використовує bounded AuditLog query (default 20, maximum 50), compact relation selects і trusted role-specific links, побудовані з entity ids. Він ніколи не використовує збережений arbitrary URL і повністю відсутній для CLIENT. Statistics виконуються через Prisma `count`/relation filters; повні набори не завантажуються й per-item queries не виконуються. Для feed та period counts додано additive indexes. Chart dependency навмисно не додавався.

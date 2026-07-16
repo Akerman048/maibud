@@ -57,7 +57,15 @@ export function normalizeProjectSearchParams(raw: RawSearchParams, currentUserId
 
 function accessWhere(currentUserId: string, role: UserRole): Prisma.ProjectWhereInput {
   if (role === UserRole.EXPERT || role === UserRole.DESIGNER || role === UserRole.CLIENT) {
-    return { members: { some: { userId: currentUserId, role } } };
+    return {
+      members: {
+        some: {
+          userId: currentUserId,
+          role,
+          user: { isActive: true, role },
+        },
+      },
+    };
   }
   if (role === UserRole.HEAD) {
     return {
@@ -68,7 +76,7 @@ function accessWhere(currentUserId: string, role: UserRole): Prisma.ProjectWhere
             userId: currentUserId,
             role,
             removedAt: null,
-            user: { isActive: true },
+            user: { isActive: true, role },
           },
         },
       },
@@ -82,7 +90,7 @@ function accessWhere(currentUserId: string, role: UserRole): Prisma.ProjectWhere
             userId: currentUserId,
             role,
             removedAt: null,
-            user: { isActive: true },
+            user: { isActive: true, role },
           },
         },
       },

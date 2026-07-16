@@ -25,6 +25,8 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json", "html"],
       include: [
+        "lib/activity-href.ts",
+        "lib/dashboard-date-range.ts",
         "lib/query-params.ts",
         "lib/search-sort-policy.ts",
         "lib/document-workflow.ts",

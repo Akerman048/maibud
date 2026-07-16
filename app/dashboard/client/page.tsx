@@ -10,6 +10,10 @@ import { normalizeProjectSearchParams, searchProjects } from "@/lib/project-sear
 import { SearchInput } from "@/components/search/SearchInput";
 import { PageSizeSelect } from "@/components/search/PageSizeSelect";
 import { Pagination } from "@/components/search/Pagination";
+import { DashboardDateRangeFilter } from "@/components/dashboard/DashboardDateRangeFilter";
+import { DashboardStats } from "@/components/dashboard/DashboardStats";
+import { getClientDashboardData } from "@/lib/dashboard/client-dashboard";
+import { parseDashboardDateRange } from "@/lib/dashboard-date-range";
 
 function getProjectStatusLabel(status: string) {
   if (status === "OPEN" || status === "open") return "Відкрито";
@@ -24,7 +28,8 @@ function getProjectStatusLabel(status: string) {
 export default async function ClientDashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const [currentUser, raw] = await Promise.all([requireRole([UserRole.CLIENT]), searchParams]);
   const query = normalizeProjectSearchParams(raw, currentUser.id, currentUser.role);
-  const result = await searchProjects(query);
+  const range = parseDashboardDateRange(raw.range);
+  const [result, dashboard] = await Promise.all([searchProjects(query), getClientDashboardData(currentUser.id, range)]);
   const projects = result.items;
 
   return (
@@ -34,6 +39,13 @@ export default async function ClientDashboardPage({ searchParams }: { searchPara
           title="Мої проєкти"
           subtitle="Проєкти, доступні вашому обліковому запису"
         />
+        <section aria-labelledby="dashboard-overview-title" className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="dashboard-overview-title" className="text-lg font-semibold text-[var(--color-text-primary)]">Огляд</h2>
+            <DashboardDateRangeFilter value={range} />
+          </div>
+          <DashboardStats stats={dashboard.stats} />
+        </section>
         <div className="flex flex-wrap items-center gap-3"><div className="min-w-[260px] flex-1"><SearchInput key={query.search} defaultValue={query.search} label="Пошук проєкту" /></div><PageSizeSelect value={query.pageSize} /></div>
 
         {projects.length === 0 ? (
