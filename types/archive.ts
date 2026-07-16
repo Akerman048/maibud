@@ -42,11 +42,11 @@ export type ArchivePage = {
 };
 
 export type ArchiveQuery = {
-  page?: string;
-  pageSize?: string;
-  search?: string;
-  archivedBy?: string;
-  archivedFrom?: string;
-  archivedTo?: string;
-  previousStatus?: string;
+  page?: string | string[];
+  pageSize?: string | string[];
+  search?: string | string[];
+  archivedBy?: string | string[];
+  archivedFrom?: string | string[];
+  archivedTo?: string | string[];
+  previousStatus?: string | string[];
 };

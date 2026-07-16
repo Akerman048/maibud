@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { FiBell } from "react-icons/fi";
 
@@ -15,6 +16,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination } from "@/components/search/Pagination";
 
 type MarkReadAction = (
   previousState: NotificationActionState,
@@ -35,15 +37,6 @@ const filters: { label: string; value: NotificationFilter }[] = [
   { label: "Прочитані", value: "read" },
 ];
 
-function pageHref(
-  basePath: string,
-  page: number,
-  pageSize: number,
-  filter: NotificationFilter,
-) {
-  return `${basePath}?page=${page}&pageSize=${pageSize}&filter=${filter}`;
-}
-
 export function NotificationsView({
   data,
   filter,
@@ -52,8 +45,14 @@ export function NotificationsView({
   markAllReadAction,
 }: NotificationsViewProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
+  const filterHref = (nextFilter: NotificationFilter) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("filter", nextFilter); params.set("page", "1");
+    return `${basePath}?${params.toString()}`;
+  };
 
   function markAllRead() {
     startTransition(async () => {
@@ -73,7 +72,7 @@ export function NotificationsView({
               asChild
               variant={filter === item.value ? "primary" : "secondary"}
             >
-              <Link href={pageHref(basePath, 1, data.pageSize, item.value)}>
+              <Link href={filterHref(item.value)}>
                 {item.label}
               </Link>
             </Button>
@@ -136,23 +135,7 @@ export function NotificationsView({
         </div>
       )}
 
-      {data.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          <Button asChild variant="secondary" disabled={data.page <= 1}>
-            <Link href={pageHref(basePath, Math.max(1, data.page - 1), data.pageSize, filter)}>
-              Назад
-            </Link>
-          </Button>
-          <span className="text-sm text-[var(--color-text-secondary)]">
-            Сторінка {data.page} із {data.totalPages}
-          </span>
-          <Button asChild variant="secondary" disabled={data.page >= data.totalPages}>
-            <Link href={pageHref(basePath, Math.min(data.totalPages, data.page + 1), data.pageSize, filter)}>
-              Далі
-            </Link>
-          </Button>
-        </div>
-      )}
+      <Pagination pagination={{ page: data.page, pageSize: data.pageSize, total: data.total, totalPages: data.totalPages, hasNextPage: data.page < data.totalPages, hasPreviousPage: data.page > 1 }} />
     </div>
   );
 }

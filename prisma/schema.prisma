@@ -174,6 +174,11 @@ model Project {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([organizationId, status, createdAt])
+  @@index([archivedAt])
+  @@index([deadline])
 }
 
 model OrganizationMember {
@@ -195,7 +200,9 @@ model OrganizationMember {
 
   @@unique([organizationId, userId])
   @@index([userId, role])
+  @@index([userId, removedAt])
   @@index([organizationId, removedAt])
+  @@index([organizationId, role, removedAt])
 }
 
 model Invitation {
@@ -245,6 +252,8 @@ model ProjectMember {
   createdAt DateTime @default(now())
 
   @@unique([userId, projectId])
+  @@index([projectId, role])
+  @@index([userId, role])
 }
 
 model Document {
@@ -286,6 +295,12 @@ model Document {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([projectId, status, createdAt])
+  @@index([authorId, createdAt])
+  @@index([reviewedById, reviewedAt])
+  @@index([isPublishedToClient, status])
+  @@index([archivedAt])
 }
 
 model DocumentVersion {
@@ -360,6 +375,7 @@ model CommentThread {
   updatedAt DateTime @updatedAt
 
   @@index([documentId, status, createdAt])
+  @@index([documentId, status, updatedAt])
   @@index([documentVersionId, createdAt])
   @@index([createdById, createdAt])
 }
@@ -435,6 +451,7 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId, readAt, createdAt])
+  @@index([userId, type, createdAt])
   @@index([userId, createdAt])
   @@index([projectId, createdAt])
   @@index([documentId, createdAt])

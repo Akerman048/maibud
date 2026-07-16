@@ -1,7 +1,6 @@
 import {
   DocumentStatus as PrismaDocumentStatus,
   Prisma,
-  ProjectStatus,
 } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { DocumentItem, DocumentStatus } from "@/types/document";
@@ -70,18 +69,6 @@ function mapDocument(document: DocumentRecord): DocumentItem {
     restoredAt: document.restoredAt?.toISOString() ?? null,
     restoredByName: document.restoredBy?.name ?? null,
   };
-}
-
-export async function getDocuments(): Promise<DocumentItem[]> {
-  const documents = await prisma.document.findMany({
-    where: {
-      status: { not: PrismaDocumentStatus.ARCHIVED },
-      project: { status: { not: ProjectStatus.ARCHIVED } },
-    },
-    select: documentSelect,
-    orderBy: { createdAt: "desc" },
-  });
-  return documents.map(mapDocument);
 }
 
 export async function getDocumentsByProjectId(

@@ -4,12 +4,14 @@ import type { DocumentItem } from "@/types/document";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { getDocumentStatusMeta } from "@/lib/document-status";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type DocumentsViewProps = {
   documents: DocumentItem[];
 };
 
 export function DocumentsView({ documents }: DocumentsViewProps) {
+  if (documents.length === 0) return <EmptyState title="Документи не знайдено" description="Спробуйте змінити пошуковий запит або фільтри." />;
   return (
     <div className="grid gap-4">
       {documents.map((document) => {

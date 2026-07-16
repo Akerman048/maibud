@@ -4,20 +4,28 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import { getClientProjects } from "@/lib/client-projects";
+import { UserRole } from "@/app/generated/prisma/client";
+import { requireRole } from "@/lib/auth-guard";
+import { normalizeProjectSearchParams, searchProjects } from "@/lib/project-search";
+import { SearchInput } from "@/components/search/SearchInput";
+import { PageSizeSelect } from "@/components/search/PageSizeSelect";
+import { Pagination } from "@/components/search/Pagination";
 
 function getProjectStatusLabel(status: string) {
-  if (status === "OPEN") return "Відкрито";
-  if (status === "IN_PROGRESS") return "У роботі";
-  if (status === "RETURNED") return "Повернуто";
-  if (status === "COMPLETED") return "Завершено";
-  if (status === "ARCHIVED") return "Архів";
+  if (status === "OPEN" || status === "open") return "Відкрито";
+  if (status === "IN_PROGRESS" || status === "processed") return "У роботі";
+  if (status === "RETURNED" || status === "returned") return "Повернуто";
+  if (status === "COMPLETED" || status === "resolved") return "Завершено";
+  if (status === "ARCHIVED" || status === "archived") return "Архів";
 
   return status;
 }
 
-export default async function ClientDashboardPage() {
-  const projects = await getClientProjects();
+export default async function ClientDashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const [currentUser, raw] = await Promise.all([requireRole([UserRole.CLIENT]), searchParams]);
+  const query = normalizeProjectSearchParams(raw, currentUser.id, currentUser.role);
+  const result = await searchProjects(query);
+  const projects = result.items;
 
   return (
     <DashboardLayout>
@@ -26,6 +34,7 @@ export default async function ClientDashboardPage() {
           title="Мої проєкти"
           subtitle="Проєкти, доступні вашому обліковому запису"
         />
+        <div className="flex flex-wrap items-center gap-3"><div className="min-w-[260px] flex-1"><SearchInput key={query.search} defaultValue={query.search} label="Пошук проєкту" /></div><PageSizeSelect value={query.pageSize} /></div>
 
         {projects.length === 0 ? (
           <Card className="p-6 text-sm text-[var(--color-text-secondary)]">
@@ -57,9 +66,7 @@ export default async function ClientDashboardPage() {
                         {getProjectStatusLabel(project.status)}
                       </Badge>
                       <span className="text-xs text-[var(--color-text-muted)]">
-                        Дедлайн: {project.deadline
-                          ? project.deadline.toLocaleDateString("uk-UA")
-                          : "не визначено"}
+                        Дедлайн: {project.deadline === "—" ? "не визначено" : project.deadline}
                       </span>
                     </div>
                   </div>
@@ -68,6 +75,7 @@ export default async function ClientDashboardPage() {
             ))}
           </div>
         )}
+        <Pagination pagination={result.pagination} />
       </div>
     </DashboardLayout>
   );

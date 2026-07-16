@@ -107,3 +107,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Search, filters and pagination
+
+Основні списки проєктів, документів, comment threads, notifications, учасників і архіву використовують URL як єдине джерело стану (`search`, `page`, `pageSize`, filters, `sortBy`, `sortDirection`). Значення нормалізуються на сервері; допустимі розміри сторінки — 10, 20 і 50, default — 20. Запит сторінки за межами `totalPages` послідовно повертає порожній список, не змінюючи requested page у metadata.
+
+Фільтрація, пошук, сортування, `count`, `skip` і `take` виконуються PostgreSQL через Prisma. Списки не завантажують повні набори для client-side filtering; latest document version і latest visible thread message вибираються bounded relation selects, без N+1. Поля сортування проходять через явні allowlists, тому raw URL keys не передаються в Prisma.
+
+Scopes застосовуються в кожному list query: HEAD/ARCHIVIST — лише активна membership їхньої organization, EXPERT/DESIGNER/CLIENT — лише відповідна ProjectMember membership. CLIENT додатково не бачить archive/internal document data; notifications завжди обмежені власником (`Notification.userId`). Для типових scope/filter/order комбінацій додана additive migration `add_search_filter_indexes`. Архів повторно використовує shared query parsing і pagination metadata/UI без зміни archive workflow.
+
+Project-detail document/comment tabs залишаються bounded detail queries (comment lists мають safety cap 100). Окремі URL pagination controls для цих вкладок — follow-up, щоб не розширювати routing refactor цієї зміни; глобальні document і comment lists уже повністю server-side paginated.

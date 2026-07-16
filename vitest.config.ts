@@ -25,6 +25,8 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json", "html"],
       include: [
+        "lib/query-params.ts",
+        "lib/search-sort-policy.ts",
         "lib/document-workflow.ts",
         "lib/document-status.ts",
         "lib/invitations.ts",
