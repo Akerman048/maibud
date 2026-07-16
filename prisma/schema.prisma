@@ -297,7 +297,9 @@ model Document {
   updatedAt DateTime @updatedAt
 
   @@index([projectId, status, createdAt])
+  @@index([projectId, status, reviewedAt])
   @@index([authorId, createdAt])
+  @@index([authorId, status])
   @@index([reviewedById, reviewedAt])
   @@index([isPublishedToClient, status])
   @@index([archivedAt])
@@ -325,6 +327,7 @@ model DocumentVersion {
 
   @@unique([documentId, version])
   @@index([documentId, createdAt])
+  @@index([createdById, createdAt])
 }
 
 model Comment {
@@ -378,6 +381,7 @@ model CommentThread {
   @@index([documentId, status, updatedAt])
   @@index([documentVersionId, createdAt])
   @@index([createdById, createdAt])
+  @@index([createdById, status])
 }
 
 model CommentMessage {
@@ -418,6 +422,10 @@ model AuditLog {
   project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([userId, createdAt])
+  @@index([entityType, createdAt])
 }
 
 model Notification {

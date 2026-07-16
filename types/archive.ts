@@ -42,6 +42,7 @@ export type ArchivePage = {
 };
 
 export type ArchiveQuery = {
+  range?: string | string[];
   page?: string | string[];
   pageSize?: string | string[];
   search?: string | string[];

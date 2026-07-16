@@ -14,7 +14,7 @@ export function getInternalProjectReadAccessWhere(
       userId,
       role,
       removedAt: null,
-      user: { isActive: true },
+      user: { isActive: true, role },
     },
   };
 
@@ -26,7 +26,7 @@ export function getInternalProjectReadAccessWhere(
 
   if (role === "HEAD" || role === "EXPERT" || role === "DESIGNER") {
     return {
-      members: { some: { userId, role } },
+      members: { some: { userId, role, user: { isActive: true, role } } },
       organization: { members: organizationMembership },
     };
   }
