@@ -7,6 +7,7 @@ import {
   type UserRole,
 } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { firstQueryValue, getPaginationMeta, normalizeSearchQuery, parseDateParam, parsePage, parsePageSize } from "@/lib/query-params";
 import type {
   ArchivePage,
   ArchiveProject,
@@ -14,7 +15,9 @@ import type {
   ArchiveQuery,
 } from "@/types/archive";
 
-const PAGE_SIZES = [10, 20, 50] as const;
+type NormalizedArchiveQuery = {
+  [Key in keyof ArchiveQuery]?: string;
+};
 
 function getArchiveAccessWhere(
   currentUserId: string,
@@ -25,7 +28,12 @@ function getArchiveAccessWhere(
       members: { some: { userId: currentUserId, role: "HEAD" } },
       organization: {
         members: {
-          some: { userId: currentUserId, role: "HEAD", removedAt: null },
+          some: {
+            userId: currentUserId,
+            role: "HEAD",
+            removedAt: null,
+            user: { isActive: true },
+          },
         },
       },
     };
@@ -35,7 +43,12 @@ function getArchiveAccessWhere(
     return {
       organization: {
         members: {
-          some: { userId: currentUserId, role: "ARCHIVIST", removedAt: null },
+          some: {
+            userId: currentUserId,
+            role: "ARCHIVIST",
+            removedAt: null,
+            user: { isActive: true },
+          },
         },
       },
     };
@@ -51,17 +64,17 @@ function getArchiveAccessWhere(
 }
 
 function getDate(value: string | undefined, endOfDay = false) {
-  if (!value) return null;
-  const date = new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const date = parseDateParam(value ? `${value}T00:00:00.000Z` : undefined);
+  if (date && endOfDay) date.setUTCHours(23, 59, 59, 999);
+  return date;
 }
 
 function getArchiveWhere(
   currentUserId: string,
   role: UserRole,
-  query: ArchiveQuery,
+  query: NormalizedArchiveQuery,
 ): Prisma.ProjectWhereInput {
-  const search = query.search?.trim();
+  const search = normalizeSearchQuery(query.search);
   const archivedFrom = getDate(query.archivedFrom);
   const archivedTo = getDate(query.archivedTo, true);
   const projectPreviousStatus = Object.values(ProjectStatus).includes(
@@ -203,6 +216,7 @@ const archiveProjectSelect = {
   documents: {
     where: { status: DocumentStatus.ARCHIVED },
     orderBy: { archivedAt: "desc" as const },
+    take: 1,
     select: {
       archivedAt: true,
       archivedBy: { select: { name: true } },
@@ -214,7 +228,10 @@ type ArchiveProjectRecord = Prisma.ProjectGetPayload<{
   select: typeof archiveProjectSelect;
 }>;
 
-function mapArchiveProject(project: ArchiveProjectRecord): ArchiveProject {
+function mapArchiveProject(
+  project: ArchiveProjectRecord,
+  documentsArchived = project.documents.length,
+): ArchiveProject {
   const latestArchivedDocument = project.documents[0];
   return {
     id: project.id,
@@ -233,7 +250,7 @@ function mapArchiveProject(project: ArchiveProjectRecord): ArchiveProject {
     restoredAt: project.restoredAt?.toISOString() ?? null,
     restoredByName: project.restoredBy?.name ?? null,
     documentsTotal: project._count.documents,
-    documentsArchived: project.documents.length,
+    documentsArchived,
   };
 }
 
@@ -242,15 +259,18 @@ export async function getArchiveProjects(
   role: UserRole,
   query: ArchiveQuery = {},
 ): Promise<ArchivePage> {
-  const requestedPageSize = Number(query.pageSize);
-  const pageSize = PAGE_SIZES.includes(requestedPageSize as 10 | 20 | 50)
-    ? (requestedPageSize as 10 | 20 | 50)
-    : 10;
-  const requestedPage = Number(query.page);
-  const page = Number.isInteger(requestedPage) && requestedPage > 0
-    ? requestedPage
-    : 1;
-  const where = getArchiveWhere(currentUserId, role, query);
+  const normalizedQuery: NormalizedArchiveQuery = {
+    page: firstQueryValue(query.page),
+    pageSize: firstQueryValue(query.pageSize),
+    search: normalizeSearchQuery(firstQueryValue(query.search)),
+    archivedBy: normalizeSearchQuery(firstQueryValue(query.archivedBy)),
+    archivedFrom: firstQueryValue(query.archivedFrom),
+    archivedTo: firstQueryValue(query.archivedTo),
+    previousStatus: firstQueryValue(query.previousStatus),
+  };
+  const pageSize = parsePageSize(normalizedQuery.pageSize);
+  const page = parsePage(normalizedQuery.page);
+  const where = getArchiveWhere(currentUserId, role, normalizedQuery);
   const [total, projects] = await prisma.$transaction([
     prisma.project.count({ where }),
     prisma.project.findMany({
@@ -261,13 +281,29 @@ export async function getArchiveProjects(
       take: pageSize,
     }),
   ]);
+  const archivedDocumentCounts = projects.length === 0
+    ? []
+    : await prisma.document.groupBy({
+        by: ["projectId"],
+        where: {
+          projectId: { in: projects.map((project) => project.id) },
+          status: DocumentStatus.ARCHIVED,
+        },
+        _count: { _all: true },
+      });
+  const archivedCountByProject = new Map(
+    archivedDocumentCounts.map((item) => [item.projectId, item._count._all]),
+  );
 
+  const pagination = getPaginationMeta({ page, pageSize, total });
   return {
-    projects: projects.map(mapArchiveProject),
+    projects: projects.map((project) =>
+      mapArchiveProject(project, archivedCountByProject.get(project.id) ?? 0),
+    ),
     total,
     page,
     pageSize,
-    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    totalPages: pagination.totalPages,
   };
 }
 

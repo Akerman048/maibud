@@ -1,8 +1,11 @@
 import "server-only";
 
+import { InvitationStatus, Prisma } from "@/app/generated/prisma/client";
+
 import { isInvitationExpired } from "@/lib/invitations";
 import { requireHeadOfOrganization } from "@/lib/organization-access";
 import { prisma } from "@/lib/prisma";
+import { getPaginationMeta } from "@/lib/query-params";
 
 export async function getCurrentHeadOrganization(userId: string) {
   return prisma.organization.findFirst({
@@ -12,6 +15,7 @@ export async function getCurrentHeadOrganization(userId: string) {
           userId,
           role: "HEAD",
           removedAt: null,
+          user: { isActive: true },
         },
       },
     },
@@ -25,79 +29,16 @@ export async function getCurrentHeadOrganization(userId: string) {
   });
 }
 
-export async function getOrganizationMembers(organizationId: string) {
+export async function getPendingInvitations(organizationId: string, page = 1, pageSize = 20) {
   await requireHeadOfOrganization(organizationId);
-
-  const memberships = await prisma.organizationMember.findMany({
-    where: {
-      organizationId,
-      removedAt: null,
-    },
-    select: {
-      id: true,
-      userId: true,
-      role: true,
-      joinedAt: true,
-      removedAt: true,
-      user: {
-        select: {
-          name: true,
-          email: true,
-          isActive: true,
-          memberships: {
-            where: {
-              project: {
-                organizationId,
-              },
-            },
-            select: {
-              id: true,
-              role: true,
-              project: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-            orderBy: {
-              createdAt: "asc",
-            },
-          },
-        },
-      },
-    },
-    orderBy: [{ role: "asc" }, { joinedAt: "asc" }],
-  });
-
-  return memberships.map((membership) => ({
-    id: membership.id,
-    userId: membership.userId,
-    name: membership.user.name,
-    email: membership.user.email,
-    role: membership.role,
-    joinedAt: membership.joinedAt.toISOString(),
-    isActive: membership.user.isActive,
-    removedAt: membership.removedAt?.toISOString() ?? null,
-    projects: membership.user.memberships.map((projectMembership) => ({
-      membershipId: projectMembership.id,
-      id: projectMembership.project.id,
-      name: projectMembership.project.name,
-      role: projectMembership.role,
-    })),
-  }));
-}
-
-export async function getPendingInvitations(organizationId: string) {
-  await requireHeadOfOrganization(organizationId);
-
-  const invitations = await prisma.invitation.findMany({
-    where: {
+  const where: Prisma.InvitationWhereInput = {
       organizationId,
       status: {
-        in: ["PENDING", "EXPIRED"],
+        in: [InvitationStatus.PENDING, InvitationStatus.EXPIRED],
       },
-    },
+    };
+  const [total, invitations] = await Promise.all([prisma.invitation.count({ where }), prisma.invitation.findMany({
+    where,
     select: {
       id: true,
       email: true,
@@ -120,9 +61,11 @@ export async function getPendingInvitations(organizationId: string) {
     orderBy: {
       createdAt: "desc",
     },
-  });
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+  })]);
 
-  return invitations.map((invitation) => ({
+  return { items: invitations.map((invitation) => ({
     id: invitation.id,
     email: invitation.email,
     role: invitation.role,
@@ -135,7 +78,7 @@ export async function getPendingInvitations(organizationId: string) {
     invitedByName: invitation.invitedBy.name,
     expiresAt: invitation.expiresAt.toISOString(),
     createdAt: invitation.createdAt.toISOString(),
-  }));
+  })), pagination: getPaginationMeta({ page, pageSize, total }) };
 }
 
 export async function getOrganizationProjects(organizationId: string) {

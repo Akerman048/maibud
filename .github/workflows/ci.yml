@@ -52,11 +52,17 @@ jobs:
       - name: Generate Prisma client
         run: pnpm exec prisma generate
 
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+
       - name: Lint
         run: pnpm run lint
 
       - name: Test
         run: pnpm run test
+
+      - name: Coverage
+        run: pnpm run test:coverage
 
       - name: Build
         run: pnpm run build

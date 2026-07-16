@@ -4,15 +4,9 @@ import { ArchiveTable } from "@/components/archive/ArchiveTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { ArchivePage, ArchiveQuery } from "@/types/archive";
-
-function pageHref(baseHref: string, query: ArchiveQuery, page: number) {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) {
-    if (value && key !== "page") params.set(key, value);
-  }
-  params.set("page", String(page));
-  return `${baseHref}?${params.toString()}`;
-}
+import { Pagination } from "@/components/search/Pagination";
+import { PageSizeSelect } from "@/components/search/PageSizeSelect";
+import { firstQueryValue } from "@/lib/query-params";
 
 export function ArchiveView({
   result,
@@ -23,16 +17,26 @@ export function ArchiveView({
   query: ArchiveQuery;
   baseHref: string;
 }) {
+  const search = firstQueryValue(query.search);
+  const archivedBy = firstQueryValue(query.archivedBy);
+  const archivedFrom = firstQueryValue(query.archivedFrom);
+  const archivedTo = firstQueryValue(query.archivedTo);
+  const previousStatus = firstQueryValue(query.previousStatus);
+
   return (
     <div className="flex flex-col gap-5">
       <form className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 lg:grid-cols-6">
-        <Input name="search" defaultValue={query.search} placeholder="Назва, адреса, документ…" className="lg:col-span-2" />
-        <Input name="archivedBy" defaultValue={query.archivedBy} placeholder="Хто архівував" />
-        <Input name="archivedFrom" defaultValue={query.archivedFrom} type="date" aria-label="Архівовано від" />
-        <Input name="archivedTo" defaultValue={query.archivedTo} type="date" aria-label="Архівовано до" />
+        <label htmlFor="archive-search" className="sr-only">Пошук в архіві</label>
+        <Input id="archive-search" name="search" defaultValue={search} placeholder="Назва, адреса, документ…" className="lg:col-span-2" />
+        <label htmlFor="archive-actor" className="sr-only">Хто архівував</label>
+        <Input id="archive-actor" name="archivedBy" defaultValue={archivedBy} placeholder="Хто архівував" />
+        <Input name="archivedFrom" defaultValue={archivedFrom} type="date" aria-label="Архівовано від" />
+        <Input name="archivedTo" defaultValue={archivedTo} type="date" aria-label="Архівовано до" />
+        <label htmlFor="archive-previous-status" className="sr-only">Попередній статус</label>
         <select
+          id="archive-previous-status"
           name="previousStatus"
-          defaultValue={query.previousStatus ?? ""}
+          defaultValue={previousStatus ?? ""}
           className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-white px-3 text-sm"
         >
           <option value="">Попередній статус</option>
@@ -43,7 +47,9 @@ export function ArchiveView({
           <option value="APPROVED">APPROVED</option>
           <option value="REJECTED">REJECTED</option>
         </select>
+        <label htmlFor="archive-page-size" className="sr-only">Кількість на сторінці</label>
         <select
+          id="archive-page-size"
           name="pageSize"
           defaultValue={String(result.pageSize)}
           className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-white px-3 text-sm"
@@ -62,22 +68,8 @@ export function ArchiveView({
 
       <ArchiveTable projects={result.projects} baseHref={baseHref} />
 
-      <div className="flex items-center justify-between text-sm text-[var(--color-text-secondary)]">
-        <span>Знайдено: {result.total}</span>
-        <div className="flex items-center gap-3">
-          {result.page > 1 ? (
-            <Link className="font-semibold hover:text-[var(--color-accent)]" href={pageHref(baseHref, query, result.page - 1)}>
-              Назад
-            </Link>
-          ) : null}
-          <span>{result.page} / {result.totalPages}</span>
-          {result.page < result.totalPages ? (
-            <Link className="font-semibold hover:text-[var(--color-accent)]" href={pageHref(baseHref, query, result.page + 1)}>
-              Далі
-            </Link>
-          ) : null}
-        </div>
-      </div>
+      <div className="flex justify-end"><PageSizeSelect value={result.pageSize} /></div>
+      <Pagination pagination={{ page: result.page, pageSize: result.pageSize, total: result.total, totalPages: result.totalPages, hasNextPage: result.page < result.totalPages, hasPreviousPage: result.page > 1 }} />
     </div>
   );
 }

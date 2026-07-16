@@ -5,11 +5,18 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { AddProjectButton } from "@/components/projects/AddProjectButton";
 import { ProjectsView } from "@/components/projects/ProjectsView";
-import { getExperts, getProjects } from "@/lib/projects";
+import { getDesigners, getExperts } from "@/lib/projects";
+import { UserRole } from "@/app/generated/prisma/client";
+import { requireRole } from "@/lib/auth-guard";
+import { normalizeProjectSearchParams, searchProjects } from "@/lib/project-search";
+import { ProjectListControls } from "@/components/projects/ProjectListControls";
+import { PageSizeSelect } from "@/components/search/PageSizeSelect";
+import { Pagination } from "@/components/search/Pagination";
 
-export default async function HeadPage() {
-  const projects = await getProjects();
-  const experts = await getExperts();
+export default async function HeadPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const [currentUser, raw] = await Promise.all([requireRole([UserRole.HEAD]), searchParams]);
+  const query = normalizeProjectSearchParams(raw, currentUser.id, currentUser.role);
+  const [result, experts, designers] = await Promise.all([searchProjects(query), getExperts(currentUser.id), getDesigners(currentUser.id)]);
 
   return (
     <DashboardLayout>
@@ -24,13 +31,16 @@ export default async function HeadPage() {
           }
         />
 
+        <ProjectListControls query={Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]))} basePath="/dashboard/head" experts={experts} designers={designers} />
+        <div className="flex justify-end"><PageSizeSelect value={query.pageSize} /></div>
         <ProjectsView
-          projects={projects}
+          projects={result.items}
           baseHref="/dashboard/head/projects"
           experts={experts}
           updateProjectAction={updateProject}
           archiveProjectAction={archiveProject}
         />
+        <Pagination pagination={result.pagination} />
       </div>
     </DashboardLayout>
   );

@@ -37,6 +37,7 @@ export type CommentThreadItem = {
   resolvedByName: string | null;
   resolvedAt: string | null;
   messages: CommentMessageItem[];
+  messageCount?: number;
   createdAt: string;
   updatedAt: string;
 };

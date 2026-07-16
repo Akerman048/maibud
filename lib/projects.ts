@@ -58,30 +58,6 @@ function mapProject(project: {
   };
 }
 
-export async function getProjects(): Promise<Project[]> {
-  const projects = await prisma.project.findMany({
-    where: {
-      status: {
-        not: PrismaProjectStatus.ARCHIVED,
-      },
-    },
-    include: {
-      archivedBy: { select: { name: true } },
-      restoredBy: { select: { name: true } },
-      members: {
-        include: {
-          user: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  return projects.map(mapProject);
-}
-
 export async function getProjectById(id: string): Promise<Project | null> {
   const project = await prisma.project.findUnique({
     where: {
@@ -105,23 +81,104 @@ export async function getProjectById(id: string): Promise<Project | null> {
   return mapProject(project);
 }
 
-export async function getExperts() {
+export async function getExperts(currentUserId: string) {
   return prisma.user.findMany({
     where: {
       role: UserRole.EXPERT,
+      isActive: true,
+      organizationMemberships: {
+        some: {
+          removedAt: null,
+          organization: {
+            members: {
+              some: {
+                userId: currentUserId,
+                removedAt: null,
+                user: { isActive: true },
+              },
+            },
+          },
+        },
+      },
     },
+    select: { id: true, name: true },
     orderBy: {
       name: "asc",
     },
   });
 }
 
-export async function getProjectOptions() {
+export async function getDesigners(currentUserId: string) {
+  return prisma.user.findMany({
+    where: {
+      role: UserRole.DESIGNER,
+      isActive: true,
+      organizationMemberships: {
+        some: {
+          removedAt: null,
+          organization: {
+            members: {
+              some: {
+                userId: currentUserId,
+                removedAt: null,
+                user: { isActive: true },
+              },
+            },
+          },
+        },
+      },
+    },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getProjectMemberOptions(
+  currentUserId: string,
+  currentRole: UserRole,
+  targetRole: UserRole,
+) {
+  return prisma.user.findMany({
+    where: {
+      role: targetRole,
+      isActive: true,
+      memberships: {
+        some: {
+          role: targetRole,
+          project: {
+            members: { some: { userId: currentUserId, role: currentRole } },
+          },
+        },
+      },
+    },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getProjectOptions(currentUserId?: string, role?: UserRole) {
   const projects = await prisma.project.findMany({
     where: {
       status: {
         not: PrismaProjectStatus.ARCHIVED,
       },
+      archivedAt: null,
+      ...(currentUserId && role
+        ? role === UserRole.EXPERT || role === UserRole.DESIGNER || role === UserRole.CLIENT
+          ? { members: { some: { userId: currentUserId, role } } }
+          : {
+              organization: {
+                members: {
+                  some: {
+                    userId: currentUserId,
+                    role,
+                    removedAt: null,
+                    user: { isActive: true },
+                  },
+                },
+              },
+            }
+        : {}),
     },
     select: {
       id: true,

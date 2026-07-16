@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FiCopy, FiPlus, FiRefreshCw, FiTrash2 } from "react-icons/fi";
 
 import {
@@ -22,6 +23,8 @@ import { Select } from "@/components/ui/Select";
 import { Tabs } from "@/components/ui/Tabs";
 import { getUserRoleLabel } from "@/lib/user-role";
 import type { OrganizationActionState } from "@/types/organization";
+import type { PaginationMeta } from "@/types/query";
+import { Pagination } from "@/components/search/Pagination";
 
 type ProjectOption = { id: string; name: string };
 type Member = {
@@ -405,15 +408,24 @@ export function TeamManagement({
   currentUserId,
   members,
   invitations,
+  memberTotal,
+  memberPagination,
+  invitationPagination,
   projects,
 }: {
   organizationId: string;
   currentUserId: string;
   members: Member[];
   invitations: PendingInvitation[];
+  memberTotal: number;
+  memberPagination: PaginationMeta;
+  invitationPagination: PaginationMeta;
   projects: ProjectOption[];
 }) {
-  const [tab, setTab] = useState("members");
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get("tab") === "invitations" ? "invitations" : "members";
   const [inviteOpen, setInviteOpen] = useState(false);
 
   return (
@@ -427,13 +439,18 @@ export function TeamManagement({
 
       <Tabs
         activeValue={tab}
-        onChange={setTab}
+        onChange={(nextTab) => {
+          const params = new URLSearchParams(searchParams.toString());
+          if (nextTab === "invitations") params.set("tab", "invitations");
+          else params.delete("tab");
+          router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        }}
         items={[
-          { label: "Учасники", value: "members", count: members.length },
+          { label: "Учасники", value: "members", count: memberTotal },
           {
             label: "Очікують запрошення",
             value: "invitations",
-            count: invitations.length,
+            count: invitationPagination.total,
           },
         ]}
       />
@@ -483,6 +500,7 @@ export function TeamManagement({
               />
             </Card>
           ))}
+          <Pagination pagination={memberPagination} />
         </div>
       )}
 
@@ -525,6 +543,7 @@ export function TeamManagement({
               />
             </Card>
           ))}
+          <Pagination pagination={invitationPagination} pageParam="invitationPage" />
         </div>
       )}
 
