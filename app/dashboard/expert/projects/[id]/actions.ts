@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import {
   NotificationType,
+  ProjectStatus,
   UserRole,
 } from "@/app/generated/prisma/client";
 import {
@@ -46,6 +47,7 @@ async function getSubmittedDocumentForExpert(
     where: {
       id: documentId,
       project: {
+        status: { not: ProjectStatus.ARCHIVED },
         members: {
           some: {
             userId: currentUserId,
@@ -112,6 +114,7 @@ async function reviewDocument({
         id: document.id,
         status: "SUBMITTED",
         project: {
+          status: { not: ProjectStatus.ARCHIVED },
           members: {
             some: {
               userId: currentUserId,
@@ -293,10 +296,13 @@ export async function createComment(formData: FormData) {
     where: {
       id: documentId,
       projectId,
+      status: { not: "ARCHIVED" },
       project: {
+        status: { not: ProjectStatus.ARCHIVED },
         members: {
           some: {
             userId: currentUser.id,
+            role: UserRole.EXPERT,
           },
         },
       },
@@ -311,6 +317,23 @@ export async function createComment(formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
+    const mutableDocument = await tx.document.findFirst({
+      where: {
+        id: documentId,
+        status: { not: "ARCHIVED" },
+        project: {
+          status: { not: ProjectStatus.ARCHIVED },
+          members: {
+            some: { userId: currentUser.id, role: UserRole.EXPERT },
+          },
+        },
+      },
+      select: { id: true },
+    });
+    if (!mutableDocument) {
+      throw new Error("Archived projects and documents are read-only");
+    }
+
     const comment = await tx.comment.create({
       data: {
         documentId,
@@ -328,7 +351,7 @@ export async function createComment(formData: FormData) {
         projectId,
       },
     });
-  });
+  }, { isolationLevel: "Serializable" });
 
   revalidatePath(`/dashboard/expert/projects/${projectId}`);
   revalidatePath("/dashboard/expert/comments");

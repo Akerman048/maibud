@@ -7,6 +7,8 @@ import type { Project } from "@/types/project";
 import { EditProjectModal } from "@/components/projects/EditProjectModal";
 import { DropdownMenu } from "@/components/ui/DropdownMenu";
 import { Toast } from "@/components/ui/Toast";
+import { ArchiveActionDialog } from "@/components/archive/ArchiveActionDialog";
+import type { ArchiveActionState } from "@/types/archive-action";
 
 type ExpertOption = {
   id: string;
@@ -18,7 +20,10 @@ type ProjectRowActionsProps = {
   baseHref: string;
   experts?: ExpertOption[];
   updateProjectAction?: (formData: FormData) => Promise<void>;
-  archiveProjectAction?: (projectId: string) => Promise<void>;
+  archiveProjectAction?: (
+    previousState: ArchiveActionState,
+    formData: FormData,
+  ) => Promise<ArchiveActionState>;
 };
 
 export function ProjectRowActions({
@@ -31,6 +36,7 @@ export function ProjectRowActions({
   const router = useRouter();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
   return (
@@ -49,16 +55,13 @@ export function ProjectRowActions({
             label: "Поділитись",
             onClick: () => setToastMessage("Посилання на проєкт скопійовано."),
           },
-          {
-            label: "Архівувати",
-            danger: true,
-            onClick: async () => {
-              if (!archiveProjectAction) return;
-
-              await archiveProjectAction(project.id);
-              setToastMessage("Проєкт переміщено в архів.");
-            },
-          },
+          ...(archiveProjectAction
+            ? [{
+                label: "Архівувати",
+                danger: true,
+                onClick: () => setIsArchiveOpen(true),
+              }]
+            : []),
         ]}
       />
 
@@ -71,6 +74,17 @@ export function ProjectRowActions({
           onUpdated={() => setToastMessage("Проєкт оновлено.")}
         />
       )}
+
+      {isArchiveOpen && archiveProjectAction ? (
+        <ArchiveActionDialog
+          action={archiveProjectAction}
+          entity="project"
+          entityId={project.id}
+          entityName={project.name}
+          mode="archive"
+          onClose={() => setIsArchiveOpen(false)}
+        />
+      ) : null}
 
       {toastMessage && (
         <Toast message={toastMessage} onClose={() => setToastMessage("")} />

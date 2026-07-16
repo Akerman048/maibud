@@ -20,6 +20,12 @@ export type DocumentItem = {
     version: number;
   }[];
   isPublishedToClient: boolean;
+  previousStatus: "approved" | "rejected" | null;
+  archivedAt: string | null;
+  archivedByName: string | null;
+  archiveReason: string | null;
+  restoredAt: string | null;
+  restoredByName: string | null;
 };
 
 export type DocumentVersionItem = {

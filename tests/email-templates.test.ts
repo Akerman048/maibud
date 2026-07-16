@@ -44,6 +44,18 @@ describe("email templates", () => {
     );
   });
 
+  it.each([
+    ["PROJECT_ARCHIVED", "Проєкт переміщено в архів"],
+    ["PROJECT_RESTORED", "Проєкт відновлено з архіву"],
+    ["DOCUMENT_ARCHIVED", "Документ переміщено в архів"],
+    ["DOCUMENT_RESTORED", "Документ відновлено з архіву"],
+  ] as const)("renders archive subject for %s", (template, subject) => {
+    expect(renderEmailTemplate(template, {
+      message: "Статус об’єкта змінено.",
+      href: "/dashboard/head/archive/project-1",
+    }, { appUrl }).subject).toBe(subject);
+  });
+
   it.each(["https://evil.example/path", "//evil.example/path", "javascript:alert(1)"])(
     "blocks unsafe CTA %s",
     (href) => {

@@ -4,6 +4,7 @@ import { UserRole } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
 import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { getInternalProjectReadAccessWhere } from "@/lib/project-read-access";
 import type { DocumentVersionItem } from "@/types/document";
 
 type RouteContext = {
@@ -17,7 +18,7 @@ export async function GET(
   context: RouteContext,
 ) {
   try {
-    await requireRole([
+    const currentUser = await requireRole([
       UserRole.HEAD,
       UserRole.EXPERT,
       UserRole.DESIGNER,
@@ -26,9 +27,13 @@ export async function GET(
 
     const { id: documentId } = await context.params;
 
-    const document = await prisma.document.findUnique({
+    const document = await prisma.document.findFirst({
       where: {
         id: documentId,
+        project: getInternalProjectReadAccessWhere(
+          currentUser.id,
+          currentUser.role,
+        ),
       },
       select: {
         id: true,

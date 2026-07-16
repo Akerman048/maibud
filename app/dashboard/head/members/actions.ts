@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   NotificationType,
   Prisma,
+  ProjectStatus,
   UserRole,
 } from "@/app/generated/prisma/client";
 import { AuthorizationError } from "@/lib/auth-guard";
@@ -143,6 +144,7 @@ export async function createInvitation(
               where: {
                 id: input.projectId,
                 organizationId: input.organizationId,
+                status: { not: ProjectStatus.ARCHIVED },
               },
               select: { id: true, name: true },
             })
@@ -583,6 +585,7 @@ export async function addMemberToProject(
           where: {
             id: input.projectId,
             organizationId: input.organizationId,
+            status: { not: ProjectStatus.ARCHIVED },
           },
           select: { id: true, name: true },
         }),
@@ -591,6 +594,20 @@ export async function addMemberToProject(
       if (!member || !project) {
         throw new OrganizationActionError(
           "Учасника або проєкт не знайдено.",
+        );
+      }
+
+      const projectGuard = await tx.project.updateMany({
+        where: {
+          id: project.id,
+          organizationId: input.organizationId,
+          status: { not: ProjectStatus.ARCHIVED },
+        },
+        data: { updatedAt: new Date() },
+      });
+      if (projectGuard.count !== 1) {
+        throw new OrganizationActionError(
+          "Архівний проєкт доступний лише для читання.",
         );
       }
 
@@ -669,6 +686,7 @@ export async function removeProjectMember(
           id: input.projectMembershipId,
           project: {
             organizationId: input.organizationId,
+            status: { not: ProjectStatus.ARCHIVED },
           },
         },
         select: {
@@ -704,9 +722,20 @@ export async function removeProjectMember(
         projectId: membership.projectId,
       });
 
-      await tx.projectMember.delete({
-        where: { id: membership.id },
+      const removed = await tx.projectMember.deleteMany({
+        where: {
+          id: membership.id,
+          project: {
+            status: { not: ProjectStatus.ARCHIVED },
+            organizationId: input.organizationId,
+          },
+        },
       });
+      if (removed.count !== 1) {
+        throw new OrganizationActionError(
+          "Архівний проєкт доступний лише для читання.",
+        );
+      }
       await tx.auditLog.create({
         data: {
           action: "Користувача видалено з проєкту",

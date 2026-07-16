@@ -11,7 +11,9 @@ import type {
 } from "@/types/comment-thread";
 import type { DocumentItem } from "@/types/document";
 import type { Project } from "@/types/project";
+import type { ArchiveActionState } from "@/types/archive-action";
 
+import { ArchiveActionDialog } from "@/components/archive/ArchiveActionDialog";
 import { AddCommentButton } from "@/components/comments/AddCommentButton";
 import { CommentThreadsView } from "@/components/comments/CommentThreadsView";
 import { DocumentPublicationActions } from "@/components/documents/DocumentPublicationActions";
@@ -20,6 +22,7 @@ import { DocumentVersions } from "@/components/documents/DocumentVersions";
 import { ProjectInfoGrid } from "@/components/projects/ProjectInfoGrid";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { getDocumentStatusMeta } from "@/lib/document-status";
 
 type DocumentActionState = {
@@ -31,6 +34,11 @@ type StatefulDocumentAction = (
   previousState: DocumentActionState,
   formData: FormData,
 ) => Promise<DocumentActionState>;
+
+type StatefulArchiveAction = (
+  previousState: ArchiveActionState,
+  formData: FormData,
+) => Promise<ArchiveActionState>;
 
 type ProjectDashboardDetailViewProps = {
   project: Project;
@@ -50,6 +58,9 @@ type ProjectDashboardDetailViewProps = {
   rejectDocumentAction?: StatefulDocumentAction;
   publishDocumentAction?: StatefulDocumentAction;
   unpublishDocumentAction?: StatefulDocumentAction;
+  canManageArchive?: boolean;
+  archiveProjectAction?: StatefulArchiveAction;
+  archiveDocumentAction?: StatefulArchiveAction;
 };
 
 type ProjectTab = "overview" | "remarks" | "documents" | "journal";
@@ -91,11 +102,18 @@ export function ProjectDashboardDetailView({
   rejectDocumentAction,
   publishDocumentAction,
   unpublishDocumentAction,
+  canManageArchive = false,
+  archiveProjectAction,
+  archiveDocumentAction,
 }: ProjectDashboardDetailViewProps) {
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null,
   );
+  const [archiveProjectOpen, setArchiveProjectOpen] = useState(false);
+  const [archiveDocumentId, setArchiveDocumentId] = useState<string | null>(null);
+  const isProjectArchived = project.status === "archived";
+  const documentToArchive = documents.find(({ id }) => id === archiveDocumentId);
 
   const selectedDocument = useMemo(
     () =>
@@ -123,19 +141,33 @@ export function ProjectDashboardDetailView({
         Назад до проєктів
       </Link>
 
-      <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
         <div className="mb-2 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold tracking-[-0.01em]">
             {project.name}
           </h1>
 
           <Badge variant="info">{project.stage}</Badge>
+          {isProjectArchived ? <Badge variant="warning">Архів</Badge> : null}
         </div>
 
         <p className="text-[14.5px] text-[var(--color-text-secondary)]">
           {project.address}
         </p>
+        </div>
+        {canManageArchive && !isProjectArchived && archiveProjectAction ? (
+          <Button type="button" variant="secondary" onClick={() => setArchiveProjectOpen(true)}>
+            Архівувати проєкт
+          </Button>
+        ) : null}
       </div>
+
+      {isProjectArchived ? (
+        <div className="rounded-[var(--radius-md)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+          Архівний проєкт доступний лише для читання. Відновлення виконується зі сторінки архіву.
+        </div>
+      ) : null}
 
       <div className="flex overflow-x-auto border-b border-[var(--color-border)]">
         {tabs.map((tab) => {
@@ -224,7 +256,7 @@ export function ProjectDashboardDetailView({
             <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
               <h2 className="font-semibold">Документи проєкту</h2>
 
-              {createCommentAction && (
+              {createCommentAction && !isProjectArchived && (
                 <AddCommentButton
                   projectId={project.id}
                   documents={documents}
@@ -305,6 +337,7 @@ export function ProjectDashboardDetailView({
                         </div>
 
                         {canReviewDocuments &&
+                          !isProjectArchived &&
                           document.status === "submitted" &&
                           approveDocumentAction &&
                           rejectDocumentAction && (
@@ -317,6 +350,7 @@ export function ProjectDashboardDetailView({
                           )}
 
                         {canManageDocumentPublication &&
+                          !isProjectArchived &&
                           publishDocumentAction &&
                           unpublishDocumentAction && (
                             <DocumentPublicationActions
@@ -325,6 +359,20 @@ export function ProjectDashboardDetailView({
                               unpublishAction={unpublishDocumentAction}
                             />
                           )}
+
+                        {canManageArchive &&
+                        !isProjectArchived &&
+                        archiveDocumentAction &&
+                        (document.status === "approved" ||
+                          document.status === "rejected") ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setArchiveDocumentId(document.id)}
+                          >
+                            Архівувати документ
+                          </Button>
+                        ) : null}
                       </div>
                     </div>
                   );
@@ -338,7 +386,7 @@ export function ProjectDashboardDetailView({
               key={selectedDocument.id}
               documentId={selectedDocument.id}
               documentName={selectedDocument.name}
-              canUpload={canUploadDocumentVersion}
+              canUpload={canUploadDocumentVersion && !isProjectArchived}
               documentStatus={selectedDocument.status}
             />
           )}
@@ -420,6 +468,27 @@ export function ProjectDashboardDetailView({
           )}
         </Card>
       )}
+
+      {archiveProjectOpen && archiveProjectAction ? (
+        <ArchiveActionDialog
+          action={archiveProjectAction}
+          entity="project"
+          entityId={project.id}
+          entityName={project.name}
+          mode="archive"
+          onClose={() => setArchiveProjectOpen(false)}
+        />
+      ) : null}
+      {documentToArchive && archiveDocumentAction ? (
+        <ArchiveActionDialog
+          action={archiveDocumentAction}
+          entity="document"
+          entityId={documentToArchive.id}
+          entityName={documentToArchive.name}
+          mode="archive"
+          onClose={() => setArchiveDocumentId(null)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProjectRowActions } from "@/components/projects/ProjectRowActions";
 import { Table } from "../ui/Table";
+import type { ArchiveActionState } from "@/types/archive-action";
 
 type ExpertOption = {
   id: string;
@@ -15,7 +16,10 @@ type ProjectTableProps = {
   baseHref?: string;
   experts?: ExpertOption[];
   updateProjectAction?: (formData: FormData) => Promise<void>;
-  archiveProjectAction?: (projectId: string) => Promise<void>;
+  archiveProjectAction?: (
+    previousState: ArchiveActionState,
+    formData: FormData,
+  ) => Promise<ArchiveActionState>;
 };
 
 export function ProjectTable({

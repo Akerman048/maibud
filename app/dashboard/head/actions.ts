@@ -3,15 +3,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import {
-  NotificationType,
-  ProjectStatus,
-  UserRole,
-} from "@/app/generated/prisma/client";
+import { ProjectStatus, UserRole } from "@/app/generated/prisma/client";
 import { requireRole } from "@/lib/auth-guard";
-import { getNotificationHref } from "@/lib/notification-policy";
-import { getProjectMembers } from "@/lib/notification-recipients";
-import { createNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 export async function createProject(formData: FormData) {
@@ -138,6 +131,17 @@ export async function updateProject(formData: FormData) {
       members: {
         some: {
           userId: currentUser.id,
+          role: UserRole.HEAD,
+        },
+      },
+      organization: {
+        members: {
+          some: {
+            userId: currentUser.id,
+            role: UserRole.HEAD,
+            removedAt: null,
+            user: { isActive: true },
+          },
         },
       },
     },
@@ -147,10 +151,26 @@ export async function updateProject(formData: FormData) {
     throw new Error("Project not found or access denied");
   }
 
+  if (project.status === ProjectStatus.ARCHIVED) {
+    throw new Error("Архівний проєкт доступний лише для читання");
+  }
+
   await prisma.$transaction(async (tx) => {
-    await tx.project.update({
+    const updateResult = await tx.project.updateMany({
       where: {
         id,
+        status: { not: ProjectStatus.ARCHIVED },
+        members: { some: { userId: currentUser.id, role: UserRole.HEAD } },
+        organization: {
+          members: {
+            some: {
+              userId: currentUser.id,
+              role: UserRole.HEAD,
+              removedAt: null,
+              user: { isActive: true },
+            },
+          },
+        },
       },
       data: {
         name,
@@ -160,6 +180,10 @@ export async function updateProject(formData: FormData) {
         deadline,
       },
     });
+
+    if (updateResult.count !== 1) {
+      throw new Error("Проєкт уже архівовано або доступ втрачено");
+    }
 
     await tx.projectMember.deleteMany({
       where: {
@@ -190,77 +214,4 @@ export async function updateProject(formData: FormData) {
   revalidatePath("/dashboard/head");
   revalidatePath("/dashboard/head/projects");
   revalidatePath(`/dashboard/head/projects/${id}`);
-}
-
-export async function archiveProject(projectId: string) {
-  const currentUser = await requireRole([UserRole.HEAD]);
-
-  if (!projectId) {
-    throw new Error("Project id is required");
-  }
-
-  const project = await prisma.project.findFirst({
-    where: {
-      id: projectId,
-      members: {
-        some: {
-          userId: currentUser.id,
-        },
-      },
-    },
-  });
-
-  if (!project) {
-    throw new Error("Project not found or access denied");
-  }
-
-  await prisma.$transaction(async (tx) => {
-    await tx.project.update({
-      where: {
-        id: projectId,
-      },
-      data: {
-        status: ProjectStatus.ARCHIVED,
-      },
-    });
-
-    await tx.auditLog.create({
-      data: {
-        action: "Проєкт переміщено в архів",
-        entityType: "PROJECT",
-        entityId: projectId,
-        userId: currentUser.id,
-        projectId,
-      },
-    });
-
-    const members = await getProjectMembers(tx, projectId, [
-      UserRole.HEAD,
-      UserRole.EXPERT,
-      UserRole.DESIGNER,
-      UserRole.ARCHIVIST,
-      UserRole.CLIENT,
-    ]);
-    await createNotifications(
-      tx,
-      members.map(({ userId, role }) => ({
-        userId,
-        actorId: currentUser.id,
-        type: NotificationType.PROJECT_ARCHIVED,
-        title: "Проєкт архівовано",
-        message: `Проєкт «${project.name}» переміщено в архів.`,
-        href: getNotificationHref({
-          destination: "PROJECT",
-          role,
-          projectId,
-        }),
-        projectId,
-      })),
-    );
-  });
-
-  revalidatePath("/dashboard/head");
-  revalidatePath("/dashboard/head/projects");
-  revalidatePath(`/dashboard/head/projects/${projectId}`);
-  revalidatePath("/dashboard/head/archive");
 }

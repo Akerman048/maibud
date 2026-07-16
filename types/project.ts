@@ -3,7 +3,8 @@ export type ProjectStatus =
   | "processed"
   | "resolved"
   | "returned"
-  | "overdue";
+  | "overdue"
+  | "archived";
 
 export type Project = {
   id: string;
@@ -14,6 +15,11 @@ export type Project = {
   expert: string;
   deadline: string;
   status: ProjectStatus;
+  archivedAt?: string | null;
+  archivedByName?: string | null;
+  archiveReason?: string | null;
+  restoredAt?: string | null;
+  restoredByName?: string | null;
 };
 
 export type ExpertOption = {

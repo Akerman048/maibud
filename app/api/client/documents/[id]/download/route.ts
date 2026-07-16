@@ -2,7 +2,7 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 
-import { UserRole } from "@/app/generated/prisma/client";
+import { ProjectStatus, UserRole } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
 import { requireRole } from "@/lib/auth-guard";
 import { isDocumentVisibleToClient } from "@/lib/document-workflow";
@@ -31,6 +31,7 @@ export async function GET(
         isPublishedToClient: true,
         status: "APPROVED",
         project: {
+          status: { not: ProjectStatus.ARCHIVED },
           members: {
             some: {
               userId: currentUser.id,

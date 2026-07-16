@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { Project } from "@/types/project";import { Input } from "@/components/ui/Input";
 import { Tabs } from "@/components/ui/Tabs";
 import { ProjectTable } from "@/components/projects/ProjectTable";
+import type { ArchiveActionState } from "@/types/archive-action";
 
 type ExpertOption = {
   id: string;
@@ -15,7 +16,10 @@ type ProjectsViewProps = {
   projects: Project[];
   baseHref?: string;
   experts?: ExpertOption[];
-  archiveProjectAction?: (projectId: string) => Promise<void>;
+  archiveProjectAction?: (
+    previousState: ArchiveActionState,
+    formData: FormData,
+  ) => Promise<ArchiveActionState>;
   updateProjectAction?: (formData: FormData) => Promise<void>;
 };
 

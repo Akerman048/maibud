@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  DocumentStatus,
   NotificationType,
+  ProjectStatus,
   UserRole,
 } from "@/app/generated/prisma/client";
 import {
@@ -24,21 +26,46 @@ async function getDocumentForPublication(
   currentUserId: string,
   currentUserRole: UserRole,
 ) {
+  const projectAccess =
+    currentUserRole === UserRole.ARCHIVIST
+      ? {
+          organization: {
+            members: {
+              some: {
+                userId: currentUserId,
+                role: UserRole.ARCHIVIST,
+                removedAt: null,
+                user: { isActive: true },
+              },
+            },
+          },
+        }
+      : {
+          members: {
+            some: {
+              userId: currentUserId,
+              role: UserRole.HEAD,
+            },
+          },
+          organization: {
+            members: {
+              some: {
+                userId: currentUserId,
+                role: UserRole.HEAD,
+                removedAt: null,
+                user: { isActive: true },
+              },
+            },
+          },
+        };
   const document = await prisma.document.findFirst({
     where: {
       id: documentId,
-      ...(currentUserRole === UserRole.ARCHIVIST
-        ? {}
-        : {
-            project: {
-              members: {
-                some: {
-                  userId: currentUserId,
-                  role: currentUserRole,
-                },
-              },
-            },
-          }),
+      status: { not: DocumentStatus.ARCHIVED },
+      project: {
+        status: { not: ProjectStatus.ARCHIVED },
+        ...projectAccess,
+      },
     },
     select: {
       id: true,
@@ -141,18 +168,40 @@ export async function publishDocumentToClient(
         where: {
           id: document.id,
           status: "APPROVED",
-          ...(currentUser.role === UserRole.ARCHIVIST
-            ? {}
-            : {
-                project: {
+          project: {
+            status: { not: ProjectStatus.ARCHIVED },
+            ...(currentUser.role === UserRole.ARCHIVIST
+              ? {
+                  organization: {
+                    members: {
+                      some: {
+                        userId: currentUser.id,
+                        role: UserRole.ARCHIVIST,
+                        removedAt: null,
+                        user: { isActive: true },
+                      },
+                    },
+                  },
+                }
+              : {
                   members: {
                     some: {
                       userId: currentUser.id,
-                      role: currentUser.role,
+                      role: UserRole.HEAD,
                     },
                   },
-                },
-              }),
+                  organization: {
+                    members: {
+                      some: {
+                        userId: currentUser.id,
+                        role: UserRole.HEAD,
+                        removedAt: null,
+                        user: { isActive: true },
+                      },
+                    },
+                  },
+                }),
+          },
         },
         data: {
           isPublishedToClient: true,
@@ -238,18 +287,41 @@ export async function unpublishDocumentFromClient(
       const updateResult = await tx.document.updateMany({
         where: {
           id: document.id,
-          ...(currentUser.role === UserRole.ARCHIVIST
-            ? {}
-            : {
-                project: {
+          status: { not: DocumentStatus.ARCHIVED },
+          project: {
+            status: { not: ProjectStatus.ARCHIVED },
+            ...(currentUser.role === UserRole.ARCHIVIST
+              ? {
+                  organization: {
+                    members: {
+                      some: {
+                        userId: currentUser.id,
+                        role: UserRole.ARCHIVIST,
+                        removedAt: null,
+                        user: { isActive: true },
+                      },
+                    },
+                  },
+                }
+              : {
                   members: {
                     some: {
                       userId: currentUser.id,
-                      role: currentUser.role,
+                      role: UserRole.HEAD,
                     },
                   },
-                },
-              }),
+                  organization: {
+                    members: {
+                      some: {
+                        userId: currentUser.id,
+                        role: UserRole.HEAD,
+                        removedAt: null,
+                        user: { isActive: true },
+                      },
+                    },
+                  },
+                }),
+          },
         },
         data: {
           isPublishedToClient: false,

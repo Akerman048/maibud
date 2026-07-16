@@ -5,7 +5,8 @@ type ProjectStatus =
   | "processed"
   | "resolved"
   | "returned"
-  | "overdue";
+  | "overdue"
+  | "archived";
 
 type StatusBadgeProps = {
   status: ProjectStatus;
@@ -35,6 +36,10 @@ const statusConfig = {
   overdue: {
     label: "Прострочено",
     variant: "danger",
+  },
+  archived: {
+    label: "Архів",
+    variant: "default",
   },
 } as const;
 

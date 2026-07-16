@@ -19,6 +19,10 @@ describe("email event mapping", () => {
     ["DOCUMENT_APPROVED", "DOCUMENT_APPROVED", "document"],
     ["DOCUMENT_REJECTED", "DOCUMENT_REJECTED", "document"],
     ["DOCUMENT_PUBLISHED", "DOCUMENT_PUBLISHED", "document"],
+    ["DOCUMENT_ARCHIVED", "DOCUMENT_ARCHIVED", "document"],
+    ["DOCUMENT_RESTORED", "DOCUMENT_RESTORED", "document"],
+    ["PROJECT_ARCHIVED", "PROJECT_ARCHIVED", "document"],
+    ["PROJECT_RESTORED", "PROJECT_RESTORED", "document"],
     ["COMMENT_THREAD_CREATED", "COMMENT_THREAD_CREATED", "comment"],
     ["COMMENT_REPLY_CREATED", "COMMENT_REPLY_CREATED", "comment"],
     ["COMMENT_THREAD_RESOLVED", "COMMENT_THREAD_RESOLVED", "comment"],
@@ -32,7 +36,6 @@ describe("email event mapping", () => {
 
   it("does not email noisy unsupported events", () => {
     expect(getEmailEvent("DOCUMENT_UNPUBLISHED")).toBeNull();
-    expect(getEmailEvent("PROJECT_ARCHIVED")).toBeNull();
   });
 });
 

@@ -118,4 +118,19 @@ describe("new document version transitions", () => {
       }),
     );
   });
+
+  it("rejects a new version when the project is archived", () => {
+    expect(() =>
+      getNewVersionTransition({
+        status: "REJECTED",
+        projectStatus: "ARCHIVED",
+        isPublishedToClient: false,
+        nextVersion: 2,
+      }),
+    ).toThrowError(
+      expect.objectContaining({
+        code: "ARCHIVED_PROJECT",
+      }),
+    );
+  });
 });

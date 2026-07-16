@@ -2,9 +2,20 @@ import { ArchiveView } from "@/components/archive/ArchiveView";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { getArchiveProjects } from "@/lib/archive";
+import { UserRole } from "@/app/generated/prisma/client";
+import { requireRole } from "@/lib/auth-guard";
+import type { ArchiveQuery } from "@/types/archive";
 
-export default async function ArchivistPage() {
-  const archiveProjects = await getArchiveProjects();
+export default async function ArchivistPage({
+  searchParams,
+}: {
+  searchParams: Promise<ArchiveQuery>;
+}) {
+  const [currentUser, query] = await Promise.all([
+    requireRole([UserRole.ARCHIVIST]),
+    searchParams,
+  ]);
+  const result = await getArchiveProjects(currentUser.id, currentUser.role, query);
 
   return (
     <DashboardLayout>
@@ -15,7 +26,8 @@ export default async function ArchivistPage() {
         />
 
         <ArchiveView
-          projects={archiveProjects}
+          result={result}
+          query={query}
           baseHref="/dashboard/archivist/archive"
         />
       </div>

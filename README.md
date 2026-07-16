@@ -60,6 +60,14 @@ Internal notifications are stored in PostgreSQL and are always queried by their 
 
 Notification targets are generated from trusted entity ids and role-aware internal routes. Arbitrary external URLs are rejected. Polling, WebSocket, and external realtime services are intentionally not part of this module.
 
+## Archive and restore
+
+HEAD and ARCHIVIST can archive and restore projects and eligible documents after their database membership is verified. Projects retain `previousStatus` and restore to that status (or `OPEN` as a safe fallback). Documents can be archived only from `APPROVED` or `REJECTED`; `previousStatus` restores that exact state.
+
+Archiving removes client publication immediately. Archived projects and documents are read-only for uploads, review, publication, comments, project edits, and project-membership changes. Restore never republishes content automatically. Active queries exclude archived records, while archive pages use separate access-aware server queries with search, actor/date/status filters, sorting, and pagination.
+
+Archive and restore actions write audit entries and create deduplicated internal notifications. Supported notifications enqueue email jobs through the transactional outbox; actions never contact the email provider directly.
+
 ## Email delivery
 
 Email delivery uses a transactional outbox. A business transaction creates the internal `Notification` and its eligible `EmailJob` together; it never calls Resend. The job moves through `PENDING`/`FAILED` → `PROCESSING` → `SENT`, or becomes `CANCELLED` after five attempts. Retries use delays of 1 minute, 5 minutes, 15 minutes, and 1 hour. Stale processing locks are released after 15 minutes, and atomic claims prevent two workers from sending the same job.
@@ -79,7 +87,7 @@ Trigger a bounded worker batch with `POST /api/internal/email-jobs/process` and 
 pnpm exec tsx scripts/process-email-jobs.ts
 ```
 
-The worker is never started by migrations, seed, build, or CI. Resend is initialized lazily only while processing jobs. Users control global, document, comment, and membership email categories from their role-specific settings page. Unsupported/noisy events such as document unpublish and project archive remain internal-only. Invitation resend has a 60-second cooldown, invalidates the previous token, and cancels its unsent email job. Successfully sent and terminally failed jobs replace payload data with sanitized metadata so one-time invitation links are not retained.
+The worker is never started by migrations, seed, build, or CI. Resend is initialized lazily only while processing jobs. Users control global, document, comment, and membership email categories from their role-specific settings page. Unsupported/noisy events such as document unpublish remain internal-only. Invitation resend has a 60-second cooldown, invalidates the previous token, and cancels its unsent email job. Successfully sent and terminally failed jobs replace payload data with sanitized metadata so one-time invitation links are not retained.
 
 The optional HEAD email-job observability page is intentionally deferred; inspect operational metrics through database tooling without exposing payloads or invitation URLs in the application UI.
 

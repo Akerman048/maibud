@@ -6,6 +6,7 @@ import { UserRole } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
 import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { getInternalProjectReadAccessWhere } from "@/lib/project-read-access";
 import { s3 } from "@/lib/s3";
 
 const PREVIEW_URL_EXPIRES_IN = 5 * 60;
@@ -28,7 +29,7 @@ export async function GET(
   context: RouteContext,
 ) {
   try {
-    await requireRole([
+    const currentUser = await requireRole([
       UserRole.HEAD,
       UserRole.EXPERT,
       UserRole.DESIGNER,
@@ -41,6 +42,12 @@ export async function GET(
       where: {
         id: versionId,
         documentId,
+        document: {
+          project: getInternalProjectReadAccessWhere(
+            currentUser.id,
+            currentUser.role,
+          ),
+        },
       },
       select: {
         objectKey: true,

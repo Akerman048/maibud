@@ -1,91 +1,68 @@
 import Link from "next/link";
-import { FiAlertTriangle } from "react-icons/fi";
 
-import type { ArchiveProject } from "@/data/mockArchiveProjects";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import type { ArchiveProject } from "@/types/archive";
 
-type ArchiveTableProps = {
+export function ArchiveTable({
+  projects,
+  baseHref,
+}: {
   projects: ArchiveProject[];
   baseHref: string;
-};
-
-export function ArchiveTable({ projects, baseHref }: ArchiveTableProps) {
+}) {
   if (projects.length === 0) {
     return (
       <EmptyState
         title="В архіві нічого не знайдено"
-        description="Спробуйте змінити пошуковий запит."
+        description="Спробуйте змінити пошук або фільтри."
       />
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[760px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white">
-        <div className="grid grid-cols-[1.6fr_1.7fr_1fr_1.1fr] gap-4 border-b border-[var(--color-border)] bg-slate-50 px-5 py-3 text-xs font-semibold uppercase text-[var(--color-text-muted)]">
-          <div>Проєкт</div>
-          <div>Документи</div>
-          <div>Статус</div>
-          <div>Обіцянки</div>
-        </div>
-
-        {projects.map((project) => {
-          const progress =
-            (project.documentsArchived / project.documentsTotal) * 100;
-
-          return (
-            <Link
-              key={project.id}
-              href={`${baseHref}/${project.id}`}
-              className="grid grid-cols-[1.6fr_1.7fr_1fr_1.1fr] items-center gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0 hover:bg-slate-50"
-            >
-              <span className="text-[15px] font-semibold">{project.name}</span>
-
-              <div>
-                <div className="mb-1.5 flex justify-between text-[13.5px]">
-                  <span className="text-[var(--color-text-secondary)]">
-                    Документів
-                  </span>
-                  <span className="font-semibold">
-                    {project.documentsArchived} з {project.documentsTotal}
-                  </span>
+    <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white">
+      <table className="min-w-[900px] w-full text-left">
+        <thead className="bg-slate-50 text-xs uppercase text-[var(--color-text-muted)]">
+          <tr>
+            <th className="px-5 py-3">Проєкт</th>
+            <th className="px-5 py-3">Стан</th>
+            <th className="px-5 py-3">Документи</th>
+            <th className="px-5 py-3">Архівував</th>
+            <th className="px-5 py-3">Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          {projects.map((project) => (
+            <tr key={project.id} className="border-t border-slate-100 hover:bg-slate-50">
+              <td className="px-5 py-4">
+                <Link href={`${baseHref}/${project.id}`} className="font-semibold hover:text-[var(--color-accent)]">
+                  {project.name}
+                </Link>
+                <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                  {project.address} · {project.customer}
                 </div>
-
-                <div className="h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]">
-                  <div
-                    className={
-                      project.status === "closed"
-                        ? "h-full rounded-full bg-[var(--color-success)]"
-                        : "h-full rounded-full bg-[var(--color-warning)]"
-                    }
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-
-              <Badge
-                variant={project.status === "closed" ? "success" : "warning"}
-              >
-                {project.status === "closed" ? "Комплект закрито" : "Неповний"}
-              </Badge>
-
-              <div>
-                {project.overduePromises > 0 ? (
-                  <span className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-red-700">
-                    <FiAlertTriangle className="size-3.5" />
-                    Прострочено: {project.overduePromises}
-                  </span>
-                ) : (
-                  <span className="text-[13.5px] text-[var(--color-text-muted)]">
-                    —
-                  </span>
-                )}
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+              </td>
+              <td className="px-5 py-4">
+                <Badge variant={project.status === "ARCHIVED" ? "warning" : "default"}>
+                  {project.status === "ARCHIVED" ? "Проєкт в архіві" : "Архівні документи"}
+                </Badge>
+              </td>
+              <td className="px-5 py-4 text-sm">
+                {project.documentsArchived} з {project.documentsTotal}
+              </td>
+              <td className="px-5 py-4 text-sm">
+                {project.archivedByName ?? "—"}
+              </td>
+              <td className="px-5 py-4 text-sm">
+                {project.archivedAt
+                  ? new Date(project.archivedAt).toLocaleDateString("uk-UA")
+                  : "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

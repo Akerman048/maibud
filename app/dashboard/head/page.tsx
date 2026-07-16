@@ -1,4 +1,5 @@
-import { archiveProject, createProject, updateProject } from "./actions";
+import { createProject, updateProject } from "./actions";
+import { archiveProject } from "@/app/dashboard/archive-actions";
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
