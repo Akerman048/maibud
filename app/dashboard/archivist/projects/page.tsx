@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { ProjectsView } from "@/components/projects/ProjectsView";
 import { getProjects } from "@/lib/projects";
+import { archiveProject } from "@/app/dashboard/archive-actions";
 
 export default async function ArchivistProjectsPage() {
   const projects = await getProjects();
@@ -17,6 +18,7 @@ export default async function ArchivistProjectsPage() {
         <ProjectsView
           projects={projects}
           baseHref="/dashboard/archivist/projects"
+          archiveProjectAction={archiveProject}
         />
       </div>
     </DashboardLayout>

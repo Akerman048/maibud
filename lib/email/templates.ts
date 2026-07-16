@@ -23,6 +23,10 @@ const SUBJECTS: Record<EmailTemplate, string> = {
   COMMENT_THREAD_RETURNED: "Зауваження повернено в роботу",
   PROJECT_MEMBER_ADDED: "Доступ до проєкту надано",
   PROJECT_MEMBER_REMOVED: "Доступ до проєкту змінено",
+  PROJECT_ARCHIVED: "Проєкт переміщено в архів",
+  PROJECT_RESTORED: "Проєкт відновлено з архіву",
+  DOCUMENT_ARCHIVED: "Документ переміщено в архів",
+  DOCUMENT_RESTORED: "Документ відновлено з архіву",
 };
 
 function getString(payload: EmailPayload, key: string, fallback = "") {

@@ -124,7 +124,11 @@ async function main() {
         address: "вул. Набережна, 18, м. Дніпро",
         customer: "ТОВ «Дніпро Рітейл»",
         stage: "Завершено",
-        status: ProjectStatus.COMPLETED,
+        status: ProjectStatus.ARCHIVED,
+        previousStatus: ProjectStatus.COMPLETED,
+        archivedAt: new Date("2026-07-01T09:00:00.000Z"),
+        archivedById: archivist.id,
+        archiveReason: "Демонстраційний завершений проєкт",
         deadline: new Date("2026-06-28"),
         organizationId: organization.id,
       },
@@ -155,6 +159,33 @@ await prisma.document.create({
     status: "APPROVED",
     projectId: projects[1].id,
     authorId: expert.id,
+  },
+});
+
+const archivedDocument = await prisma.document.create({
+  data: {
+    title: "Архівний погоджений висновок.pdf",
+    status: "ARCHIVED",
+    previousStatus: "APPROVED",
+    archivedAt: new Date("2026-07-02T10:00:00.000Z"),
+    archivedById: head.id,
+    archiveReason: "Замінено актуальною редакцією",
+    projectId: projects[1].id,
+    authorId: designer.id,
+  },
+});
+
+const restoredDocument = await prisma.document.create({
+  data: {
+    title: "Відновлений розділ конструкцій.pdf",
+    status: "REJECTED",
+    archivedAt: new Date("2026-06-30T10:00:00.000Z"),
+    archivedById: archivist.id,
+    archiveReason: "Тимчасово вилучено для перевірки",
+    restoredAt: new Date("2026-07-03T10:00:00.000Z"),
+    restoredById: archivist.id,
+    projectId: projects[1].id,
+    authorId: designer.id,
   },
 });
 
@@ -272,6 +303,35 @@ const demoThread = await prisma.commentThread.create({
         href: `/dashboard/head/projects/${projects[0].id}`,
         projectId: projects[0].id,
       },
+      {
+        userId: designer.id,
+        actorId: archivist.id,
+        type: NotificationType.PROJECT_ARCHIVED,
+        title: "Проєкт архівовано",
+        message: `Проєкт «${projects[2].name}» переміщено в архів.`,
+        href: `/dashboard/designer/archive/${projects[2].id}`,
+        projectId: projects[2].id,
+      },
+      {
+        userId: designer.id,
+        actorId: archivist.id,
+        type: NotificationType.DOCUMENT_RESTORED,
+        title: "Документ відновлено",
+        message: `Документ «${restoredDocument.title}» відновлено з архіву.`,
+        href: `/dashboard/designer/projects/${projects[1].id}`,
+        projectId: projects[1].id,
+        documentId: restoredDocument.id,
+      },
+      {
+        userId: designer.id,
+        actorId: head.id,
+        type: NotificationType.DOCUMENT_ARCHIVED,
+        title: "Документ архівовано",
+        message: `Документ «${archivedDocument.title}» переміщено в архів.`,
+        href: `/dashboard/designer/archive/${projects[1].id}`,
+        projectId: projects[1].id,
+        documentId: archivedDocument.id,
+      },
     ],
   });
 
@@ -314,6 +374,30 @@ const demoThread = await prisma.commentThread.create({
         attempts: 1,
         failedAt: new Date(),
         lastError: "Demo provider failure",
+      },
+      {
+        template: EmailTemplate.PROJECT_ARCHIVED,
+        status: EmailJobStatus.PENDING,
+        recipientEmail: designer.email,
+        recipientName: designer.name,
+        subject: "Проєкт архівовано",
+        payload: {
+          recipientName: designer.name,
+          message: `Проєкт «${projects[2].name}» переміщено в архів.`,
+          href: `/dashboard/designer/archive/${projects[2].id}`,
+        },
+      },
+      {
+        template: EmailTemplate.DOCUMENT_RESTORED,
+        status: EmailJobStatus.PENDING,
+        recipientEmail: designer.email,
+        recipientName: designer.name,
+        subject: "Документ відновлено",
+        payload: {
+          recipientName: designer.name,
+          message: `Документ «${restoredDocument.title}» відновлено з архіву.`,
+          href: `/dashboard/designer/projects/${projects[1].id}`,
+        },
       },
     ],
   });

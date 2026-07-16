@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getArchivedProjectHref,
   getNotificationHref,
   getUniqueNotificationRecipientIds,
   isNotificationOwnedByUser,
@@ -68,5 +69,20 @@ describe("notification href policy", () => {
       role: "CLIENT",
       commentThreadId: "thread-1",
     })).toBeNull();
+  });
+
+  it("generates safe role-aware archive destinations", () => {
+    expect(getArchivedProjectHref("HEAD", "project-1")).toBe(
+      "/dashboard/head/archive/project-1",
+    );
+    expect(getArchivedProjectHref("ARCHIVIST", "project-1")).toBe(
+      "/dashboard/archivist/archive/project-1",
+    );
+    expect(getArchivedProjectHref("DESIGNER", "project-1")).toBe(
+      "/dashboard/designer/archive/project-1",
+    );
+    expect(isSafeNotificationHref(
+      getArchivedProjectHref("HEAD", "project-1"),
+    )).toBe(true);
   });
 });

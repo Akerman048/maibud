@@ -1,8 +1,10 @@
-import type {
+import {
   DocumentStatus as PrismaDocumentStatus,
+  Prisma,
+  ProjectStatus,
 } from "@/app/generated/prisma/client";
-import type { DocumentItem, DocumentStatus } from "@/types/document";
 import { prisma } from "@/lib/prisma";
+import type { DocumentItem, DocumentStatus } from "@/types/document";
 
 export function mapDocumentStatus(
   status: PrismaDocumentStatus,
@@ -12,115 +14,89 @@ export function mapDocumentStatus(
   if (status === "APPROVED") return "approved";
   if (status === "REJECTED") return "rejected";
   if (status === "ARCHIVED") return "archived";
-
   return "draft";
+}
+
+function mapPreviousStatus(status: PrismaDocumentStatus | null) {
+  if (status === "APPROVED") return "approved" as const;
+  if (status === "REJECTED") return "rejected" as const;
+  return null;
 }
 
 function getDocumentType(title: string) {
   return title.split(".").pop()?.toUpperCase() ?? "FILE";
 }
 
-export async function getDocuments(): Promise<DocumentItem[]> {
-  const documents = await prisma.document.findMany({
-    select: {
-      id: true,
-      title: true,
-      status: true,
-      rejectionReason: true,
-      reviewedAt: true,
-      isPublishedToClient: true,
-      project: {
-        select: {
-          name: true,
-        },
-      },
-      reviewedBy: {
-        select: {
-          name: true,
-        },
-      },
-      versions: {
-        orderBy: {
-          version: "desc",
-        },
-        select: {
-          id: true,
-          version: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+const documentSelect = {
+  id: true,
+  title: true,
+  status: true,
+  previousStatus: true,
+  rejectionReason: true,
+  reviewedAt: true,
+  isPublishedToClient: true,
+  archivedAt: true,
+  archiveReason: true,
+  restoredAt: true,
+  archivedBy: { select: { name: true } },
+  restoredBy: { select: { name: true } },
+  project: { select: { name: true } },
+  reviewedBy: { select: { name: true } },
+  versions: {
+    orderBy: { version: "desc" as const },
+    select: { id: true, version: true },
+  },
+} satisfies Prisma.DocumentSelect;
 
-  return documents.map((document) => ({
+type DocumentRecord = Prisma.DocumentGetPayload<{ select: typeof documentSelect }>;
+
+function mapDocument(document: DocumentRecord): DocumentItem {
+  return {
     id: document.id,
     name: document.title,
     project: document.project.name,
     type: getDocumentType(document.title),
     status: mapDocumentStatus(document.status),
+    previousStatus: mapPreviousStatus(document.previousStatus),
     rejectionReason: document.rejectionReason,
-    reviewedAt:
-      document.reviewedAt?.toLocaleString("uk-UA") ?? null,
+    reviewedAt: document.reviewedAt?.toLocaleString("uk-UA") ?? null,
     reviewedByName: document.reviewedBy?.name ?? null,
     latestVersion: document.versions[0]?.version ?? null,
     versions: document.versions,
     isPublishedToClient: document.isPublishedToClient,
-  }));
+    archivedAt: document.archivedAt?.toISOString() ?? null,
+    archivedByName: document.archivedBy?.name ?? null,
+    archiveReason: document.archiveReason,
+    restoredAt: document.restoredAt?.toISOString() ?? null,
+    restoredByName: document.restoredBy?.name ?? null,
+  };
+}
+
+export async function getDocuments(): Promise<DocumentItem[]> {
+  const documents = await prisma.document.findMany({
+    where: {
+      status: { not: PrismaDocumentStatus.ARCHIVED },
+      project: { status: { not: ProjectStatus.ARCHIVED } },
+    },
+    select: documentSelect,
+    orderBy: { createdAt: "desc" },
+  });
+  return documents.map(mapDocument);
 }
 
 export async function getDocumentsByProjectId(
   projectId: string,
+  options: { includeArchived?: boolean } = {},
 ): Promise<DocumentItem[]> {
   const documents = await prisma.document.findMany({
     where: {
       projectId,
+      ...(options.includeArchived
+        ? {}
+        : { status: { not: PrismaDocumentStatus.ARCHIVED } }),
     },
-    select: {
-      id: true,
-      title: true,
-      status: true,
-      rejectionReason: true,
-      reviewedAt: true,
-      isPublishedToClient: true,
-      project: {
-        select: {
-          name: true,
-        },
-      },
-      reviewedBy: {
-        select: {
-          name: true,
-        },
-      },
-      versions: {
-        orderBy: {
-          version: "desc",
-        },
-        select: {
-          id: true,
-          version: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
+    select: documentSelect,
+    orderBy: { createdAt: "desc" },
   });
-
-  return documents.map((document) => ({
-    id: document.id,
-    name: document.title,
-    project: document.project.name,
-    type: getDocumentType(document.title),
-    status: mapDocumentStatus(document.status),
-    rejectionReason: document.rejectionReason,
-    reviewedAt:
-      document.reviewedAt?.toLocaleString("uk-UA") ?? null,
-    reviewedByName: document.reviewedBy?.name ?? null,
-    latestVersion: document.versions[0]?.version ?? null,
-    versions: document.versions,
-    isPublishedToClient: document.isPublishedToClient,
-  }));
+  return documents.map(mapDocument);
 }

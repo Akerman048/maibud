@@ -78,6 +78,15 @@ export function getNotificationHref({
   return `/dashboard/client/projects/${projectId}`;
 }
 
+export function getArchivedProjectHref(role: UserRole, projectId: string) {
+  if (role === "HEAD") return `/dashboard/head/archive/${projectId}`;
+  if (role === "ARCHIVIST") return `/dashboard/archivist/archive/${projectId}`;
+  if (role === "DESIGNER") return `/dashboard/designer/archive/${projectId}`;
+  if (role === "EXPERT") return `/dashboard/expert/projects/${projectId}`;
+
+  return "/dashboard/client";
+}
+
 export function getUniqueNotificationRecipientIds(
   recipientUserIds: string[],
   actorUserId?: string,

@@ -1,6 +1,11 @@
-import type { DocumentStatus } from "@/app/generated/prisma/client";
+import type {
+  DocumentStatus,
+  ProjectStatus,
+} from "@/app/generated/prisma/client";
 
-export type DocumentWorkflowErrorCode = "ARCHIVED_DOCUMENT";
+export type DocumentWorkflowErrorCode =
+  | "ARCHIVED_DOCUMENT"
+  | "ARCHIVED_PROJECT";
 
 export class DocumentWorkflowError extends Error {
   readonly code: DocumentWorkflowErrorCode;
@@ -33,12 +38,21 @@ export type NewVersionTransition = {
 
 export function getNewVersionTransition({
   status,
+  projectStatus,
   nextVersion,
 }: {
   status: DocumentStatus;
+  projectStatus?: ProjectStatus;
   isPublishedToClient: boolean;
   nextVersion: number;
 }): NewVersionTransition {
+  if (projectStatus === "ARCHIVED") {
+    throw new DocumentWorkflowError(
+      "ARCHIVED_PROJECT",
+      "Archived projects are read-only",
+    );
+  }
+
   switch (status) {
     case "DRAFT":
       return {

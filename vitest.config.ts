@@ -35,6 +35,7 @@ export default defineConfig({
         "lib/email/retry-policy.ts",
         "lib/email/safety.ts",
         "lib/email/templates.ts",
+        "lib/archive-policy.ts",
       ],
       exclude: [
         "app/generated/**",

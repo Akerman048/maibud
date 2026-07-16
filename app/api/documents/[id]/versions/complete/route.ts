@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import {
   NotificationType,
   Prisma,
+  ProjectStatus,
   UserRole,
 } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
@@ -182,6 +183,7 @@ export async function POST(
         project: {
           select: {
             organizationId: true,
+            status: true,
           },
         },
       },
@@ -195,6 +197,13 @@ export async function POST(
         {
           status: 404,
         },
+      );
+    }
+
+    if (document.project.status === ProjectStatus.ARCHIVED) {
+      return NextResponse.json(
+        { error: "Archived projects are read-only" },
+        { status: 409 },
       );
     }
 
@@ -329,13 +338,43 @@ export async function POST(
     try {
       const result = await prisma.$transaction(
         async (tx) => {
-          const currentDocument = await tx.document.findUnique({
+          const projectGuard = await tx.project.updateMany({
+            where: {
+              id: document.projectId,
+              status: { not: ProjectStatus.ARCHIVED },
+              members: {
+                some: {
+                  userId: currentUser.id,
+                  role: UserRole.DESIGNER,
+                },
+              },
+            },
+            data: { updatedAt: new Date() },
+          });
+
+          if (projectGuard.count !== 1) {
+            throw new DocumentWorkflowConflictError(
+              "Project was archived or access was revoked",
+            );
+          }
+
+          const currentDocument = await tx.document.findFirst({
             where: {
               id: documentId,
+              project: {
+                status: { not: ProjectStatus.ARCHIVED },
+                members: {
+                  some: {
+                    userId: currentUser.id,
+                    role: UserRole.DESIGNER,
+                  },
+                },
+              },
             },
             select: {
               status: true,
               isPublishedToClient: true,
+              project: { select: { status: true } },
             },
           });
 
@@ -362,10 +401,50 @@ export async function POST(
             (latestVersion?.version ?? 0) + 1;
           const transition = getNewVersionTransition({
             status: currentDocument.status,
+            projectStatus: currentDocument.project.status,
             isPublishedToClient:
               currentDocument.isPublishedToClient,
             nextVersion,
           });
+
+          const documentGuard = await tx.document.updateMany({
+            where: {
+              id: documentId,
+              status: currentDocument.status,
+              project: {
+                status: { not: ProjectStatus.ARCHIVED },
+                members: {
+                  some: {
+                    userId: currentUser.id,
+                    role: UserRole.DESIGNER,
+                  },
+                },
+              },
+            },
+            data: {
+              status: transition.nextStatus,
+              ...(transition.clearReview
+                ? {
+                    reviewedAt: null,
+                    reviewedById: null,
+                    rejectionReason: null,
+                  }
+                : {}),
+              ...(transition.clearPublication
+                ? {
+                    isPublishedToClient: false,
+                    publishedAt: null,
+                    publishedById: null,
+                  }
+                : {}),
+            },
+          });
+
+          if (documentGuard.count !== 1) {
+            throw new DocumentWorkflowConflictError(
+              "Document or project state changed during upload",
+            );
+          }
 
           const version = await tx.documentVersion.create({
             data: {
@@ -379,35 +458,6 @@ export async function POST(
               createdById: currentUser.id,
             },
           });
-
-          if (
-            transition.nextStatus !== currentDocument.status ||
-            transition.clearReview ||
-            transition.clearPublication
-          ) {
-            await tx.document.update({
-              where: {
-                id: documentId,
-              },
-              data: {
-                status: transition.nextStatus,
-                ...(transition.clearReview
-                  ? {
-                      reviewedAt: null,
-                      reviewedById: null,
-                      rejectionReason: null,
-                    }
-                  : {}),
-                ...(transition.clearPublication
-                  ? {
-                      isPublishedToClient: false,
-                      publishedAt: null,
-                      publishedById: null,
-                    }
-                  : {}),
-              },
-            });
-          }
 
           await tx.auditLog.create({
             data: {

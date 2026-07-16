@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import {
   CommentStatus,
+  DocumentStatus,
+  ProjectStatus,
   UserRole,
 } from "@/app/generated/prisma/client";
 import { requireRole } from "@/lib/auth-guard";
@@ -22,7 +24,9 @@ export async function resolveComment(formData: FormData) {
     where: {
       id: commentId,
       document: {
+        status: { not: DocumentStatus.ARCHIVED },
         project: {
+          status: { not: ProjectStatus.ARCHIVED },
           members: {
             some: {
               userId: currentUser.id,
@@ -41,14 +45,26 @@ export async function resolveComment(formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.comment.update({
+    const result = await tx.comment.updateMany({
       where: {
         id: commentId,
+        document: {
+          status: { not: DocumentStatus.ARCHIVED },
+          project: {
+            status: { not: ProjectStatus.ARCHIVED },
+            members: {
+              some: { userId: currentUser.id, role: UserRole.DESIGNER },
+            },
+          },
+        },
       },
       data: {
         status: CommentStatus.RESOLVED,
       },
     });
+    if (result.count !== 1) {
+      throw new Error("Archived projects and documents are read-only");
+    }
 
     await tx.auditLog.create({
       data: {

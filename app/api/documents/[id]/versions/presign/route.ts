@@ -5,7 +5,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 
-import { UserRole } from "@/app/generated/prisma/client";
+import { ProjectStatus, UserRole } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
 import { requireRole } from "@/lib/auth-guard";
 import { canUploadDocumentVersion } from "@/lib/document-workflow";
@@ -146,6 +146,7 @@ export async function POST(
           select: {
             id: true,
             organizationId: true,
+            status: true,
           },
         },
       },
@@ -159,6 +160,13 @@ export async function POST(
         {
           status: 404,
         },
+      );
+    }
+
+    if (document.project.status === ProjectStatus.ARCHIVED) {
+      return NextResponse.json(
+        { error: "Archived projects are read-only" },
+        { status: 409 },
       );
     }
 

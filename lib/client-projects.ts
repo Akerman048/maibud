@@ -1,6 +1,6 @@
 import "server-only";
 
-import { UserRole } from "@/app/generated/prisma/client";
+import { ProjectStatus, UserRole } from "@/app/generated/prisma/client";
 import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 
@@ -9,6 +9,7 @@ export async function getClientProjects() {
 
   return prisma.project.findMany({
     where: {
+      status: { not: ProjectStatus.ARCHIVED },
       members: {
         some: {
           userId: currentUser.id,
@@ -38,6 +39,7 @@ export async function getClientProjectById(projectId: string) {
   return prisma.project.findFirst({
     where: {
       id: projectId,
+      status: { not: ProjectStatus.ARCHIVED },
       members: {
         some: {
           userId: currentUser.id,

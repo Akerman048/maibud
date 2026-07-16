@@ -60,6 +60,8 @@ enum NotificationType {
   INVITATION_ACCEPTED
   PROJECT_ARCHIVED
   PROJECT_RESTORED
+  DOCUMENT_ARCHIVED
+  DOCUMENT_RESTORED
 }
 
 enum EmailJobStatus {
@@ -84,6 +86,10 @@ enum EmailTemplate {
   COMMENT_THREAD_RETURNED
   PROJECT_MEMBER_ADDED
   PROJECT_MEMBER_REMOVED
+  PROJECT_ARCHIVED
+  PROJECT_RESTORED
+  DOCUMENT_ARCHIVED
+  DOCUMENT_RESTORED
 }
 
 model User {
@@ -107,6 +113,10 @@ model User {
   documents               Document[]           @relation("AuthoredDocuments")
   publishedDocuments      Document[]           @relation("PublishedDocuments")
   reviewedDocuments       Document[]           @relation("ReviewedDocuments")
+  archivedProjects        Project[]            @relation("ArchivedProjects")
+  restoredProjects        Project[]            @relation("RestoredProjects")
+  archivedDocuments       Document[]           @relation("ArchivedDocuments")
+  restoredDocuments       Document[]           @relation("RestoredDocuments")
   documentVersions        DocumentVersion[]
   comments                Comment[]
   createdCommentThreads   CommentThread[]      @relation("CreatedCommentThreads")
@@ -141,6 +151,17 @@ model Project {
   stage    String
   status   ProjectStatus @default(OPEN)
   deadline DateTime?
+
+  previousStatus ProjectStatus?
+
+  archivedAt    DateTime?
+  archivedById  String?
+  archivedBy    User?     @relation("ArchivedProjects", fields: [archivedById], references: [id], onDelete: SetNull)
+  archiveReason String?
+
+  restoredAt   DateTime?
+  restoredById String?
+  restoredBy   User?     @relation("RestoredProjects", fields: [restoredById], references: [id], onDelete: SetNull)
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -230,6 +251,17 @@ model Document {
   id     String         @id @default(cuid())
   title  String
   status DocumentStatus @default(DRAFT)
+
+  previousStatus DocumentStatus?
+
+  archivedAt    DateTime?
+  archivedById  String?
+  archivedBy    User?     @relation("ArchivedDocuments", fields: [archivedById], references: [id], onDelete: SetNull)
+  archiveReason String?
+
+  restoredAt   DateTime?
+  restoredById String?
+  restoredBy   User?     @relation("RestoredDocuments", fields: [restoredById], references: [id], onDelete: SetNull)
 
   isPublishedToClient Boolean   @default(false)
   publishedAt         DateTime?

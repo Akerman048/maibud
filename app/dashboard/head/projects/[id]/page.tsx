@@ -8,6 +8,7 @@ import { getProjectById } from "@/lib/projects";
 import { requireRole } from "@/lib/auth-guard";
 import { getCommentThreadsByProjectId } from "@/lib/comment-threads";
 import { getProjectAuditLogs } from "@/lib/audit";
+import { archiveDocument, archiveProject } from "@/app/dashboard/archive-actions";
 
 import {
   publishDocumentToClient,
@@ -46,6 +47,9 @@ export default async function HeadProjectDetailPage({ params }: PageProps) {
         canManageDocumentPublication
         publishDocumentAction={publishDocumentToClient}
         unpublishDocumentAction={unpublishDocumentFromClient}
+        canManageArchive
+        archiveProjectAction={archiveProject}
+        archiveDocumentAction={archiveDocument}
       />
     </DashboardLayout>
   );

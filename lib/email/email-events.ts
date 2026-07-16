@@ -38,6 +38,22 @@ const EMAIL_EVENTS: Partial<Record<NotificationType, EmailEvent>> = {
     template: "DOCUMENT_PUBLISHED",
     category: "document",
   },
+  DOCUMENT_ARCHIVED: {
+    template: "DOCUMENT_ARCHIVED",
+    category: "document",
+  },
+  DOCUMENT_RESTORED: {
+    template: "DOCUMENT_RESTORED",
+    category: "document",
+  },
+  PROJECT_ARCHIVED: {
+    template: "PROJECT_ARCHIVED",
+    category: "document",
+  },
+  PROJECT_RESTORED: {
+    template: "PROJECT_RESTORED",
+    category: "document",
+  },
   COMMENT_THREAD_CREATED: {
     template: "COMMENT_THREAD_CREATED",
     category: "comment",

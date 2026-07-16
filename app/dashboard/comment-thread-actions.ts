@@ -7,6 +7,8 @@ import {
   CommentThreadStatus,
   DocumentStatus,
   NotificationType,
+  Prisma,
+  ProjectStatus,
   UserRole,
 } from "@/app/generated/prisma/client";
 import {
@@ -104,6 +106,16 @@ function getActionState(error: unknown): CommentThreadActionState {
     };
   }
 
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2034"
+  ) {
+    return {
+      error: "Дані вже змінилися. Оновіть сторінку та повторіть дію.",
+      success: false,
+    };
+  }
+
   console.error("Comment thread action failed", error);
 
   return {
@@ -162,6 +174,9 @@ async function getThreadForMember(
           projectId: true,
           title: true,
           authorId: true,
+          project: {
+            select: { status: true },
+          },
         },
       },
     },
@@ -174,6 +189,19 @@ async function getThreadForMember(
   }
 
   return thread;
+}
+
+function assertCommentThreadMutable(
+  thread: Awaited<ReturnType<typeof getThreadForMember>>,
+) {
+  if (
+    thread.document.status === DocumentStatus.ARCHIVED ||
+    thread.document.project.status === ProjectStatus.ARCHIVED
+  ) {
+    throw new CommentThreadActionError(
+      "Архівний проєкт або документ доступний лише для читання.",
+    );
+  }
 }
 
 export async function createCommentThread(
@@ -201,6 +229,7 @@ export async function createCommentThread(
           not: DocumentStatus.ARCHIVED,
         },
         project: {
+          status: { not: ProjectStatus.ARCHIVED },
           members: {
             some: {
               userId: currentUser.id,
@@ -236,6 +265,25 @@ export async function createCommentThread(
     }
 
     const thread = await prisma.$transaction(async (tx) => {
+      const documentGuard = await tx.document.updateMany({
+        where: {
+          id: input.documentId,
+          status: { not: DocumentStatus.ARCHIVED },
+          project: {
+            status: { not: ProjectStatus.ARCHIVED },
+            members: {
+              some: { userId: currentUser.id, role: UserRole.EXPERT },
+            },
+          },
+        },
+        data: { updatedAt: new Date() },
+      });
+      if (documentGuard.count !== 1) {
+        throw new CommentThreadActionError(
+          "Архівний проєкт або документ доступний лише для читання.",
+        );
+      }
+
       const createdThread = await tx.commentThread.create({
         data: {
           documentId: input.documentId,
@@ -287,7 +335,7 @@ export async function createCommentThread(
       );
 
       return createdThread;
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     revalidateCommentThreads(input.projectId, thread.id);
 
@@ -318,11 +366,7 @@ export async function replyToCommentThread(
       currentUser.role,
     );
 
-    if (thread.document.status === DocumentStatus.ARCHIVED) {
-      throw new CommentThreadActionError(
-        "Не можна відповідати в зауваженні до архівованого документа.",
-      );
-    }
+    assertCommentThreadMutable(thread);
 
     if (!canReplyToCommentThread({ role: currentUser.role, status: thread.status })) {
       throw new CommentThreadActionError(
@@ -331,6 +375,28 @@ export async function replyToCommentThread(
     }
 
     await prisma.$transaction(async (tx) => {
+      const documentGuard = await tx.document.updateMany({
+        where: {
+          id: thread.document.id,
+          status: { not: DocumentStatus.ARCHIVED },
+          project: {
+            status: { not: ProjectStatus.ARCHIVED },
+            members: {
+              some: {
+                userId: currentUser.id,
+                role: currentUser.role,
+              },
+            },
+          },
+        },
+        data: { updatedAt: new Date() },
+      });
+      if (documentGuard.count !== 1) {
+        throw new CommentThreadActionError(
+          "Архівний проєкт або документ доступний лише для читання.",
+        );
+      }
+
       const createdMessage = await tx.commentMessage.create({
         data: {
           threadId: thread.id,
@@ -390,7 +456,7 @@ export async function replyToCommentThread(
       );
 
       return createdMessage;
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     revalidateCommentThreads(thread.document.projectId, thread.id);
 
@@ -414,6 +480,7 @@ export async function markCommentThreadResolved(
       currentUser.id,
       UserRole.DESIGNER,
     );
+    assertCommentThreadMutable(thread);
 
     if (!canMarkCommentThreadResolved({ role: currentUser.role, status: thread.status })) {
       throw new CommentThreadActionError(
@@ -427,6 +494,18 @@ export async function markCommentThreadResolved(
           id: thread.id,
           status: {
             in: [CommentThreadStatus.OPEN, CommentThreadStatus.RETURNED],
+          },
+          document: {
+            status: { not: DocumentStatus.ARCHIVED },
+            project: {
+              status: { not: ProjectStatus.ARCHIVED },
+              members: {
+                some: {
+                  userId: currentUser.id,
+                  role: UserRole.DESIGNER,
+                },
+              },
+            },
           },
         },
         data: {
@@ -502,6 +581,7 @@ export async function returnCommentThread(
       currentUser.id,
       UserRole.EXPERT,
     );
+    assertCommentThreadMutable(thread);
 
     if (!canReturnCommentThread({ role: currentUser.role, status: thread.status })) {
       throw new CommentThreadActionError(
@@ -514,6 +594,18 @@ export async function returnCommentThread(
         where: {
           id: thread.id,
           status: CommentThreadStatus.RESOLVED,
+          document: {
+            status: { not: DocumentStatus.ARCHIVED },
+            project: {
+              status: { not: ProjectStatus.ARCHIVED },
+              members: {
+                some: {
+                  userId: currentUser.id,
+                  role: UserRole.EXPERT,
+                },
+              },
+            },
+          },
         },
         data: {
           status: CommentThreadStatus.RETURNED,
@@ -618,7 +710,11 @@ export async function deleteCommentMessage(
           select: {
             id: true,
             document: {
-              select: { projectId: true },
+              select: {
+                projectId: true,
+                status: true,
+                project: { select: { status: true } },
+              },
             },
             messages: {
               orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -633,6 +729,16 @@ export async function deleteCommentMessage(
     if (!message) {
       throw new CommentThreadActionError(
         "Повідомлення не знайдено або доступ заборонено.",
+      );
+    }
+
+
+    if (
+      message.thread.document.status === DocumentStatus.ARCHIVED ||
+      message.thread.document.project.status === ProjectStatus.ARCHIVED
+    ) {
+      throw new CommentThreadActionError(
+        "Архівний проєкт або документ доступний лише для читання.",
       );
     }
 
@@ -660,6 +766,20 @@ export async function deleteCommentMessage(
           id: message.id,
           authorId: currentUser.id,
           deletedAt: null,
+          thread: {
+            document: {
+              status: { not: DocumentStatus.ARCHIVED },
+              project: {
+                status: { not: ProjectStatus.ARCHIVED },
+                members: {
+                  some: {
+                    userId: currentUser.id,
+                    role: currentUser.role,
+                  },
+                },
+              },
+            },
+          },
         },
         data: {
           deletedAt: new Date(),

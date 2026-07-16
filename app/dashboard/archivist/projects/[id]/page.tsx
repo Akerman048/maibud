@@ -12,6 +12,7 @@ import {
   publishDocumentToClient,
   unpublishDocumentFromClient,
 } from "@/app/dashboard/head/projects/[id]/actions";
+import { archiveDocument, archiveProject } from "@/app/dashboard/archive-actions";
 
 type PageProps = {
   params: Promise<{
@@ -47,6 +48,9 @@ export default async function ArchivistProjectDetailPage({
         canManageDocumentPublication
         publishDocumentAction={publishDocumentToClient}
         unpublishDocumentAction={unpublishDocumentFromClient}
+        canManageArchive
+        archiveProjectAction={archiveProject}
+        archiveDocumentAction={archiveDocument}
       />
     </DashboardLayout>
   );

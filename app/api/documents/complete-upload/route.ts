@@ -8,6 +8,7 @@ import {
   DocumentStatus,
   NotificationType,
   Prisma,
+  ProjectStatus,
   UserRole,
 } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
@@ -33,6 +34,8 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 const DEFAULT_MAX_FILE_SIZE = 25 * 1024 * 1024;
+
+class DocumentUploadConflictError extends Error {}
 
 function normalizeContentType(contentType: string | undefined) {
   return contentType?.split(";")[0]?.trim().toLowerCase() ?? "";
@@ -147,6 +150,7 @@ export async function POST(request: Request) {
       select: {
         id: true,
         organizationId: true,
+        status: true,
       },
     });
 
@@ -158,6 +162,13 @@ export async function POST(request: Request) {
         {
           status: 404,
         },
+      );
+    }
+
+    if (project.status === ProjectStatus.ARCHIVED) {
+      return NextResponse.json(
+        { error: "Archived projects are read-only" },
+        { status: 409 },
       );
     }
 
@@ -281,6 +292,26 @@ export async function POST(request: Request) {
 
     try {
       const result = await prisma.$transaction(async (tx) => {
+        const projectGuard = await tx.project.updateMany({
+          where: {
+            id: projectId,
+            status: { not: ProjectStatus.ARCHIVED },
+            members: {
+              some: {
+                userId: currentUser.id,
+                role: UserRole.DESIGNER,
+              },
+            },
+          },
+          data: { updatedAt: new Date() },
+        });
+
+        if (projectGuard.count !== 1) {
+          throw new DocumentUploadConflictError(
+            "Project was archived or access was revoked",
+          );
+        }
+
         const document = await tx.document.create({
           data: {
             title,
@@ -337,6 +368,8 @@ export async function POST(request: Request) {
           versionId: version.id,
           version: version.version,
         };
+      }, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
       });
 
       return NextResponse.json(result, {
@@ -354,6 +387,23 @@ export async function POST(request: Request) {
           {
             status: 409,
           },
+        );
+      }
+
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2034"
+      ) {
+        return NextResponse.json(
+          { error: "Project state changed during upload" },
+          { status: 409 },
+        );
+      }
+
+      if (error instanceof DocumentUploadConflictError) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 409 },
         );
       }
 
