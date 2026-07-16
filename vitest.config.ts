@@ -40,6 +40,9 @@ export default defineConfig({
         "lib/email/safety.ts",
         "lib/email/templates.ts",
         "lib/archive-policy.ts",
+        "lib/logger.ts",
+        "lib/request-id.ts",
+        "lib/error-normalization.ts",
       ],
       exclude: [
         "app/generated/**",

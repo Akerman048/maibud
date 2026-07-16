@@ -7,6 +7,9 @@ import { NextResponse } from "next/server";
 
 import { ProjectStatus, UserRole } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
+import { withApiObservability } from "@/lib/api-observability";
+import { normalizeError } from "@/lib/error-normalization";
+import { logger } from "@/lib/logger";
 import { requireRole } from "@/lib/auth-guard";
 import { canUploadDocumentVersion } from "@/lib/document-workflow";
 import { prisma } from "@/lib/prisma";
@@ -56,7 +59,7 @@ function sanitizeFileName(fileName: string) {
   return `${baseName || "document"}${extension}`;
 }
 
-export async function POST(
+async function createVersionPresignedUpload(
   request: Request,
   context: RouteContext,
 ) {
@@ -228,10 +231,9 @@ export async function POST(
       return authorizationResponse;
     }
 
-    console.error(
-      "Create document version presigned URL failed",
-      error,
-    );
+    logger.error("Create document version presigned URL failed", {
+      error: normalizeError(error),
+    });
 
     return NextResponse.json(
       {
@@ -243,3 +245,8 @@ export async function POST(
     );
   }
 }
+
+export const POST = withApiObservability(
+  "/api/documents/[id]/versions/presign",
+  createVersionPresignedUpload,
+);

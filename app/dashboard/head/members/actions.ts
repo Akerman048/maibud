@@ -571,8 +571,7 @@ export async function addMemberToProject(
     );
 
     await prisma.$transaction(async (tx) => {
-      const [member, project] = await Promise.all([
-        tx.organizationMember.findFirst({
+      const member = await tx.organizationMember.findFirst({
           where: {
             id: input.organizationMemberId,
             organizationId: input.organizationId,
@@ -580,16 +579,15 @@ export async function addMemberToProject(
             user: { isActive: true },
           },
           select: { userId: true, role: true },
-        }),
-        tx.project.findFirst({
+        });
+      const project = await tx.project.findFirst({
           where: {
             id: input.projectId,
             organizationId: input.organizationId,
             status: { not: ProjectStatus.ARCHIVED },
           },
           select: { id: true, name: true },
-        }),
-      ]);
+        });
 
       if (!member || !project) {
         throw new OrganizationActionError(

@@ -36,6 +36,30 @@ pnpm run build
 
 Unit tests exercise deterministic business rules and do not connect to Neon or S3. CI uses placeholder environment values and does not run migrations or seed scripts.
 
+## Production deployment
+
+Production uses Node.js 22, pnpm 11, a pooled TLS-verified PostgreSQL connection, private S3 storage, secure Auth.js cookies, same-origin application APIs, and explicit security headers. `.env.example` is the environment contract: required, conditional credential, tuning, public build-time, and optional observability variables are documented there.
+
+The repository includes a multi-stage non-root `Dockerfile`, an optional `.env.production` Docker Compose setup, standalone Next.js output, liveness/readiness endpoints, and a CI pipeline that validates Prisma before typecheck, tests, coverage, lint, and build. Build/start do not run migrations or seed scripts and do not call S3 or Resend.
+
+Provider-specific setup for Render, Vercel, Neon, AWS S3/CORS, Resend, GitHub Actions, release ordering, and rollback is in [docs/deployment.md](docs/deployment.md). Review that checklist before introducing production secrets or enabling the email worker.
+
+## Observability and production operations
+
+`GET /api/health` is a process liveness probe and never touches PostgreSQL. `GET /api/ready` is a readiness probe that runs only `SELECT 1`, has a four-second timeout, and returns a controlled `503` response when the database is unavailable. Both endpoints disable caching and reject `HEAD`, `POST`, and `PUT` with `405`.
+
+API handlers emit one-line JSON logs with a request ID, stable route template, method, status, duration and sanitized error data. A valid incoming `x-request-id` is preserved; missing or unsafe values are replaced with a UUID, and the final ID is returned in the response header. The sanitizer recursively redacts credentials, auth/session values, raw tokens, S3 keys/URLs and business-sensitive payload fields. Production error logs omit stacks.
+
+Metrics use a low-cardinality abstraction for HTTP request counts/duration, database readiness failures, processed email jobs and upload-completion failures. It is a no-op by default; set `METRICS_LOG_ENABLED=true` to emit metric records through the structured logger. Route labels are templates and never contain ids, emails, filenames or query strings. A later Prometheus or OpenTelemetry sink can implement the same abstraction without changing endpoint code.
+
+Sentry is optional. With empty `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` the SDK is disabled and sends nothing. Configure server and public DSNs plus environment/release variables to enable it. `sendDefaultPii` remains disabled, sensitive event fields are sanitized, and routine health/readiness or explicitly expected errors are dropped. Source maps are disabled unless `SENTRY_AUTH_TOKEN` is present; production upload additionally requires `SENTRY_ORG` and `SENTRY_PROJECT`. Do not expose `SENTRY_AUTH_TOKEN` as a public variable.
+
+For production PostgreSQL, use a certificate-verifying connection string such as `?sslmode=verify-full` and verify the provider CA/hostname policy. Do not weaken TLS validation merely to silence certificate errors.
+
+The `pg` concurrent-query warning was traced to `Promise.all` calls on a Prisma interactive transaction, which owns one checked-out `pg Client`. Transaction work and notification fan-out now run sequentially on that client; ordinary independent Prisma queries still use the adapter-managed pool, and the development Prisma singleton remains unchanged.
+
+Deployment and incident procedures, including rollback, log fields and the rate-limit review, are documented in [docs/operations.md](docs/operations.md).
+
 ## Organization invitations
 
 HEAD creates an invitation and assigns its organization role; invitees cannot choose a role themselves. Invitation links contain a one-time raw token, while the `Invitation` row stores only its SHA-256 hash. The raw link is queued in a short-lived email job during create/resend, and the generated URL is still shown to HEAD as a manual-delivery fallback.

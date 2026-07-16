@@ -7,6 +7,9 @@ import { NextResponse } from "next/server";
 
 import { ProjectStatus, UserRole } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
+import { withApiObservability } from "@/lib/api-observability";
+import { normalizeError } from "@/lib/error-normalization";
+import { logger } from "@/lib/logger";
 import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { s3 } from "@/lib/s3";
@@ -49,7 +52,7 @@ function sanitizeFileName(fileName: string) {
   return `${baseName || "document"}${extension}`;
 }
 
-export async function POST(request: Request) {
+async function createPresignedUpload(request: Request) {
   try {
     const currentUser = await requireRole([UserRole.DESIGNER]);
 
@@ -195,7 +198,7 @@ export async function POST(request: Request) {
       return authorizationResponse;
     }
 
-    console.error("Create document presigned URL failed", error);
+    logger.error("Create document presigned URL failed", { error: normalizeError(error) });
 
     return NextResponse.json(
       {
@@ -207,3 +210,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiObservability("/api/uploads/presign", createPresignedUpload);

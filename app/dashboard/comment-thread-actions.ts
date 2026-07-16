@@ -416,19 +416,17 @@ export async function replyToCommentThread(
         },
       });
 
-      const [projectMembers, participantMessages] = await Promise.all([
-        getProjectMembers(tx, thread.document.projectId, [
+      const projectMembers = await getProjectMembers(tx, thread.document.projectId, [
           UserRole.EXPERT,
           UserRole.DESIGNER,
-        ]),
-        tx.commentMessage.findMany({
+        ]);
+      const participantMessages = await tx.commentMessage.findMany({
           where: {
             threadId: thread.id,
             author: { isActive: true },
           },
           select: { authorId: true },
-        }),
-      ]);
+        });
       const participantIds = new Set([
         thread.createdById,
         thread.document.authorId,

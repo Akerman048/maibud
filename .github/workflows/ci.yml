@@ -21,6 +21,7 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
       AUTH_SECRET: ci-only-not-a-real-secret-change-me-32-characters
       AUTH_URL: http://localhost:3000
+      AUTH_TRUST_HOST: "true"
       AWS_REGION: eu-central-1
       AWS_S3_BUCKET: maibud-ci-placeholder
       AWS_ACCESS_KEY_ID: ci-placeholder
@@ -29,6 +30,12 @@ jobs:
       EMAIL_FROM: МайБуд <ci@example.com>
       EMAIL_JOB_SECRET: ci-email-job-secret-at-least-32-characters
       APP_URL: http://localhost:3000
+      NEXT_TELEMETRY_DISABLED: "1"
+      SENTRY_DSN: ""
+      NEXT_PUBLIC_SENTRY_DSN: ""
+      SENTRY_AUTH_TOKEN: ""
+      SENTRY_ORG: ""
+      SENTRY_PROJECT: ""
 
     steps:
       - name: Checkout
@@ -53,7 +60,7 @@ jobs:
         run: pnpm exec prisma generate
 
       - name: Typecheck
-        run: pnpm exec tsc --noEmit
+        run: pnpm run typecheck
 
       - name: Lint
         run: pnpm run lint

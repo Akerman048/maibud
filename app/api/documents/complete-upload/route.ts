@@ -12,6 +12,10 @@ import {
   UserRole,
 } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
+import { withApiObservability } from "@/lib/api-observability";
+import { normalizeError } from "@/lib/error-normalization";
+import { logger } from "@/lib/logger";
+import { metrics } from "@/lib/metrics";
 import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { getNotificationHref } from "@/lib/notification-policy";
@@ -60,7 +64,7 @@ function isExpectedObjectKey({
   );
 }
 
-export async function POST(request: Request) {
+async function completeDocumentUpload(request: Request) {
   try {
     const currentUser = await requireRole([UserRole.DESIGNER]);
 
@@ -235,7 +239,7 @@ export async function POST(request: Request) {
         );
       }
 
-      console.error("S3 HeadObject failed", error);
+      logger.error("S3 HeadObject failed", { error: normalizeError(error) });
 
       return NextResponse.json(
         {
@@ -417,7 +421,8 @@ export async function POST(request: Request) {
       return authorizationResponse;
     }
 
-    console.error("Complete document upload failed", error);
+    metrics.uploadCompletionFailure();
+    logger.error("Complete document upload failed", { error: normalizeError(error) });
 
     return NextResponse.json(
       {
@@ -429,3 +434,8 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiObservability(
+  "/api/documents/complete-upload",
+  completeDocumentUpload,
+);

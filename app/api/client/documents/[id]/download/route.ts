@@ -4,6 +4,9 @@ import { NextResponse } from "next/server";
 
 import { ProjectStatus, UserRole } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
+import { withApiObservability } from "@/lib/api-observability";
+import { normalizeError } from "@/lib/error-normalization";
+import { logger } from "@/lib/logger";
 import { requireRole } from "@/lib/auth-guard";
 import { isDocumentVisibleToClient } from "@/lib/document-workflow";
 import { prisma } from "@/lib/prisma";
@@ -17,7 +20,7 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(
+async function getClientDownload(
   _request: Request,
   context: RouteContext,
 ) {
@@ -102,7 +105,7 @@ export async function GET(
       return authorizationResponse;
     }
 
-    console.error("Get client document download URL failed", error);
+    logger.error("Get client document download URL failed", { error: normalizeError(error) });
 
     return NextResponse.json(
       { error: "Internal server error" },
@@ -110,3 +113,8 @@ export async function GET(
     );
   }
 }
+
+export const GET = withApiObservability(
+  "/api/client/documents/[id]/download",
+  getClientDownload,
+);

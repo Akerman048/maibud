@@ -28,6 +28,7 @@ export function MobileSidebar({
     <>
       <button
         type="button"
+        aria-label="Відкрити меню"
         onClick={() => setIsOpen(true)}
         className="fixed left-4 top-4 z-40 flex size-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-[var(--color-text-primary)] shadow-[var(--shadow-sm)] lg:hidden"
       >
@@ -38,6 +39,7 @@ export function MobileSidebar({
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
+            aria-label="Закрити меню"
             onClick={() => setIsOpen(false)}
             className="absolute inset-0 bg-slate-950/45"
           />
@@ -45,8 +47,9 @@ export function MobileSidebar({
           <div className="relative h-full w-[280px] bg-[var(--color-sidebar)]">
             <button
               type="button"
+              aria-label="Закрити меню"
               onClick={() => setIsOpen(false)}
-              className="absolute right-3 top-3 z-20 flex size-8 items-center justify-center rounded-md text-slate-300 hover:bg-white/10 hover:text-white"
+              className="absolute right-4 top-4 z-20 flex size-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-slate-300 shadow-sm transition hover:border-white/20 hover:bg-white/15 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               <FiX className="size-5" />
             </button>
@@ -54,6 +57,7 @@ export function MobileSidebar({
             <Sidebar
               role={role}
               user={user}
+              mobile
               unreadNotificationCount={unreadNotificationCount}
             />
           </div>

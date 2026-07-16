@@ -3,14 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=22.12 <25",
+    "pnpm": ">=11.8 <12"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "verify": "pnpm exec prisma validate && pnpm exec prisma generate && pnpm run typecheck && pnpm run test && pnpm run test:coverage && pnpm run lint && pnpm run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1085.0",
@@ -18,6 +24,8 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@radix-ui/react-slot": "^1.3.0",
+    "@sentry/nextjs": "^10.65.0",
+    "@smithy/node-http-handler": "^4.9.5",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "next": "16.2.10",
