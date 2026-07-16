@@ -40,7 +40,7 @@ export default async function InvitationPage({
     return (
       <InvitationMessage
         title="Недійсне запрошення"
-        description="Перевірте посилання або попросіть HEAD створити нове запрошення."
+        description="Перевірте посилання або попросіть керівника створити нове запрошення."
       />
     );
   }
@@ -67,7 +67,7 @@ export default async function InvitationPage({
     return (
       <InvitationMessage
         title="Термін запрошення минув"
-        description="Попросіть HEAD організації оновити запрошення."
+        description="Попросіть керівника організації оновити запрошення."
       />
     );
   }
