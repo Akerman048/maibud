@@ -1,9 +1,9 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Card } from "@/components/ui/Card";
-import { BRAND_NAME } from "@/lib/brand";
 
 export default async function LoginPage({
   searchParams,
@@ -21,12 +21,16 @@ export default async function LoginPage({
     <main className="flex min-h-screen items-center justify-center bg-[var(--color-background)] p-5">
       <Card className="w-full max-w-md p-7 sm:p-8">
         <div className="mb-7">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] font-bold text-white">
-              E
-            </div>
-
-            <span className="text-lg font-bold">{BRAND_NAME}</span>
+          <div className="inline-flex rounded-[var(--radius-lg)] bg-[var(--color-sidebar)] px-3 py-2">
+            <Image
+              src="/maibud-logo.png"
+              alt="МайБуд — Будуємо порядок."
+              width={600}
+              height={168}
+              priority
+              unoptimized
+              className="h-12 w-auto"
+            />
           </div>
 
           <h1 className="mt-7 text-2xl font-bold">Вхід у систему</h1>
