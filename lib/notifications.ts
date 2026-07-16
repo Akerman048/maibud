@@ -107,9 +107,11 @@ export async function createNotifications(
     }
   }
 
-  return Promise.all(
-    Array.from(byRecipient.values(), (input) =>
-      createNotification(tx, input),
-    ),
-  );
+  // A Prisma transaction owns one pg Client. Running queries concurrently on
+  // that client triggers pg's deprecated client.query() concurrency path.
+  const created = [];
+  for (const input of byRecipient.values()) {
+    created.push(await createNotification(tx, input));
+  }
+  return created;
 }

@@ -1,6 +1,8 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 import { NextResponse } from "next/server";
+import { withApiObservability } from "@/lib/api-observability";
+import { metrics } from "@/lib/metrics";
 
 import {
   assertEmailProviderConfigured,
@@ -18,7 +20,7 @@ function securelyMatches(value: string, expected: string) {
   return timingSafeEqual(actualHash, expectedHash);
 }
 
-export async function POST(request: Request) {
+async function processEmailJobsRequest(request: Request) {
   const secret = process.env.EMAIL_JOB_SECRET?.trim();
 
   if (!secret || secret.length < 32) {
@@ -40,7 +42,10 @@ export async function POST(request: Request) {
   try {
     assertEmailProviderConfigured();
     getValidatedAppUrl();
-    return NextResponse.json(await processEmailJobs({ batchSize: 10 }));
+    const result = await processEmailJobs({ batchSize: 10 });
+    metrics.emailJobs(result.sent, "success");
+    metrics.emailJobs(result.failed + result.cancelled, "failure");
+    return NextResponse.json(result);
   } catch (error) {
     if (
       error instanceof EmailProviderConfigurationError ||
@@ -52,6 +57,12 @@ export async function POST(request: Request) {
       );
     }
 
+    metrics.emailJobs(1, "failure");
     throw error;
   }
 }
+
+export const POST = withApiObservability(
+  "/api/internal/email-jobs/process",
+  processEmailJobsRequest,
+);

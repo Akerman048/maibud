@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 
 import { UserRole } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
+import { withApiObservability } from "@/lib/api-observability";
+import { normalizeError } from "@/lib/error-normalization";
+import { logger } from "@/lib/logger";
 import { requireRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { getInternalProjectReadAccessWhere } from "@/lib/project-read-access";
@@ -13,7 +16,7 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(
+async function getDocumentVersions(
   _request: Request,
   context: RouteContext,
 ) {
@@ -89,7 +92,7 @@ export async function GET(
       return authorizationResponse;
     }
 
-    console.error("Get document versions failed", error);
+    logger.error("Get document versions failed", { error: normalizeError(error) });
 
     return NextResponse.json(
       { error: "Internal server error" },
@@ -97,3 +100,8 @@ export async function GET(
     );
   }
 }
+
+export const GET = withApiObservability(
+  "/api/documents/[id]/versions",
+  getDocumentVersions,
+);

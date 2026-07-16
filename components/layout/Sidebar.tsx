@@ -1,10 +1,10 @@
+import Image from "next/image";
 import { FiLogOut } from "react-icons/fi";
 
 import { SidebarNav } from "./SidebarNav";
 
 import type { UserRole } from "@/app/generated/prisma/client";
 import { logout } from "@/app/dashboard/actions";
-import { BRAND_NAME } from "@/lib/brand";
 
 export type DashboardRole =
   | "head"
@@ -16,6 +16,7 @@ export type DashboardRole =
 type SidebarProps = {
   role: DashboardRole;
   unreadNotificationCount: number;
+  mobile?: boolean;
   user: {
     name?: string | null;
     email?: string | null;
@@ -48,17 +49,32 @@ function getInitials(name: string | null | undefined) {
     .join("");
 }
 
-export function Sidebar({ role, user, unreadNotificationCount }: SidebarProps) {
+export function Sidebar({
+  role,
+  user,
+  unreadNotificationCount,
+  mobile = false,
+}: SidebarProps) {
   const initials = getInitials(user.name);
 
   return (
-    <aside className="flex min-h-screen w-[248px] shrink-0 flex-col bg-[var(--color-sidebar)] px-3 py-5">
-      <div className="mb-4 flex items-center gap-2.5 border-b border-white/10 px-3 pb-5">
-        <div className="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] text-base font-bold text-white">
-          E
+    <aside
+      className={`flex min-h-screen w-[248px] shrink-0 flex-col bg-[var(--color-sidebar)] px-3 pb-5 ${
+        mobile ? "pt-[76px]" : "pt-5"
+      }`}
+    >
+      <div className="mb-4 border-b border-white/10 px-3 pb-5">
+        <div className="relative h-14 w-full overflow-hidden rounded-[var(--radius-md)]">
+          <Image
+            src="/maibud-logo.png"
+            alt="МайБуд — Будуємо порядок."
+            width={600}
+            height={168}
+            priority
+            unoptimized
+            className="h-full w-full object-contain"
+          />
         </div>
-
-        <span className="text-[17px] font-bold text-white">{BRAND_NAME}</span>
       </div>
 
       <SidebarNav

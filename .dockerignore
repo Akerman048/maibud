@@ -1,0 +1,15 @@
+.git
+.github
+.next
+.pnpm-store
+coverage
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+.env
+.env.*
+!.env.example
+Dockerfile*
+docker-compose*.yml
+README.md
+docs

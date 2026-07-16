@@ -11,7 +11,13 @@ const credentialsSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost:
+    !isProduction || process.env.AUTH_TRUST_HOST === "true",
+  useSecureCookies: isProduction,
+
   session: {
     strategy: "jwt",
   },
@@ -78,6 +84,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
+    redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+
+      try {
+        return new URL(url).origin === baseUrl ? url : baseUrl;
+      } catch {
+        return baseUrl;
+      }
+    },
+
     jwt({ token, user }) {
       if (user) {
         token.userId = user.id;

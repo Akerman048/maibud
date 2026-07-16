@@ -11,6 +11,10 @@ import {
   UserRole,
 } from "@/app/generated/prisma/client";
 import { getAuthorizationErrorResponse } from "@/lib/api-error";
+import { withApiObservability } from "@/lib/api-observability";
+import { normalizeError } from "@/lib/error-normalization";
+import { logger } from "@/lib/logger";
+import { metrics } from "@/lib/metrics";
 import { requireRole } from "@/lib/auth-guard";
 import {
   canUploadDocumentVersion,
@@ -83,7 +87,7 @@ function isExpectedObjectKey({
   );
 }
 
-export async function POST(
+async function completeVersionUpload(
   request: Request,
   context: RouteContext,
 ) {
@@ -282,7 +286,7 @@ export async function POST(
         );
       }
 
-      console.error("S3 version HeadObject failed", error);
+      logger.error("S3 version HeadObject failed", { error: normalizeError(error) });
 
       return NextResponse.json(
         {
@@ -553,10 +557,10 @@ export async function POST(
       return authorizationResponse;
     }
 
-    console.error(
-      "Complete document version upload failed",
-      error,
-    );
+    metrics.uploadCompletionFailure();
+    logger.error("Complete document version upload failed", {
+      error: normalizeError(error),
+    });
 
     return NextResponse.json(
       {
@@ -568,3 +572,8 @@ export async function POST(
     );
   }
 }
+
+export const POST = withApiObservability(
+  "/api/documents/[id]/versions/complete",
+  completeVersionUpload,
+);
