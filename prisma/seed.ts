@@ -38,7 +38,7 @@ async function main() {
 
   const organization = await prisma.organization.create({
     data: {
-      name: "ExpertDesk Demo",
+      name: "МайБуд Demo",
     },
   });
 

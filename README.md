@@ -1,22 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# МайБуд
+
+Платформа управління будівельними проєктами та технічною документацією.
+
+МайБуд — Next.js application для організаційної роботи з проєктами, документами, версіями, погодженнями, зауваженнями, архівом, сповіщеннями й role-scoped client portal.
 
 ## Getting Started
 
-First, run the development server:
+Clone the repository and install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+git clone https://github.com/Akerman048/maibud.git
+cd maibud
+pnpm install
+```
+
+Copy `.env.example`, configure local values, then run the development server:
+
+```bash
 pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The package and technical slug are `maibud`; the user-facing Ukrainian product name is `МайБуд`.
 
 ## Testing
 
@@ -77,7 +83,7 @@ Required environment variables:
 ```bash
 APP_URL=http://localhost:3000
 RESEND_API_KEY=re_placeholder
-EMAIL_FROM="ExpertDesk <notifications@example.com>"
+EMAIL_FROM="МайБуд <notifications@example.com>"
 EMAIL_JOB_SECRET=replace-with-at-least-32-random-characters
 ```
 
@@ -91,7 +97,7 @@ The worker is never started by migrations, seed, build, or CI. Resend is initial
 
 The optional HEAD email-job observability page is intentionally deferred; inspect operational metrics through database tooling without exposing payloads or invitation URLs in the application UI.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to optimize IBM Plex Sans with Latin and Cyrillic subsets.
 
 ## Learn More
 
@@ -124,3 +130,51 @@ Dashboard кожної ролі показує KPI у власному server-si
 Current-state cards позначені «Зараз»: активні/архівовані проєкти, поточні document statuses, відкриті threads, публікації, memberships і unread notifications. Period cards використовують `reviewedAt`, `publishedAt`, `archivedAt` або `DocumentVersion.createdAt` та пояснюють вибраний інтервал. URL-параметр `range=7d|30d|90d|all` є джерелом стану; invalid значення нормалізується до `30d`, а зміна періоду зберігає інші query params.
 
 Internal activity feed використовує bounded AuditLog query (default 20, maximum 50), compact relation selects і trusted role-specific links, побудовані з entity ids. Він ніколи не використовує збережений arbitrary URL і повністю відсутній для CLIENT. Statistics виконуються через Prisma `count`/relation filters; повні набори не завантажуються й per-item queries не виконуються. Для feed та period counts додано additive indexes. Chart dependency навмисно не додавався.
+
+## Rename and infrastructure checklist
+
+Code branding does not rename or migrate external infrastructure automatically. Complete these steps only after code review, commit and push.
+
+### GitHub repository
+
+Rename the repository display/name to `maibud` in GitHub, then update the local remote:
+
+```bash
+git remote -v
+git remote set-url origin https://github.com/Akerman048/maibud.git
+git remote -v
+```
+
+### Local folder
+
+Close the development server, IDE terminals and processes that use the repository before renaming the local directory:
+
+```bash
+cd ..
+mv expert-desk maibud
+cd maibud
+```
+
+### Vercel and application URLs
+
+- Rename the Vercel project display name manually and verify the intended `maibud.vercel.app` production URL.
+- Update `APP_URL`, Auth.js trusted/callback URLs, OAuth callback settings, deployment secrets and any allowed-origin/CORS configuration.
+- Verify Resend CTA links use the new `APP_URL`.
+- Keep the previous domain until login, callbacks, invitation links and redirects have been verified.
+
+### Neon
+
+- The Neon project display name may be changed manually to `Maibud`.
+- The database name may remain `neondb`; a new database is not required for branding.
+- Do not commit or copy the connection string into documentation.
+
+### Email and Resend
+
+- Configure a verified production sender separately; examples intentionally use `МайБуд <notifications@example.com>`.
+- Update the Resend sender/domain only after DNS verification. Do not start the email worker as part of the rename.
+
+### S3 and CORS
+
+- The current bucket may keep its legacy name. Merely changing `AWS_S3_BUCKET` points the application at a different bucket.
+- To adopt a `maibud-*` bucket, create and configure it manually, copy and verify all objects, update bucket CORS/allowed origins, then update the deployment secret.
+- Existing `DocumentVersion.objectKey` values must not be rewritten. Do not delete the previous bucket until downloads, previews and uploads have been verified against the new one.

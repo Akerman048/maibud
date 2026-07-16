@@ -6,6 +6,7 @@ import { ProjectPublicDocuments } from "@/components/projects/ProjectPublicDocum
 import { ProjectStepper } from "@/components/projects/ProjectStepper";
 import { getProjectAuditLogs } from "@/lib/audit";
 import { getProjectById } from "@/lib/projects";
+import { BRAND_NAME } from "@/lib/brand";
 
 type ProjectPageProps = {
   params: Promise<{
@@ -33,7 +34,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             E
           </div>
 
-          <span className="text-[15px] font-bold">ExpertDesk</span>
+          <span className="text-[15px] font-bold">{BRAND_NAME}</span>
         </div>
 
         <div>

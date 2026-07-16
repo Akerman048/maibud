@@ -14,7 +14,7 @@ export function ShareProjectModal({
   onClose,
   onCopied,
 }: ShareProjectModalProps) {
-  const shareLink = "https://expertdesk.ua/share/pd-vezhi-8f3k2m";
+  const shareLink = "https://maibud.ua/share/pd-vezhi-8f3k2m";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-6">

@@ -22,11 +22,11 @@ jobs:
       AUTH_SECRET: ci-only-not-a-real-secret-change-me-32-characters
       AUTH_URL: http://localhost:3000
       AWS_REGION: eu-central-1
-      AWS_S3_BUCKET: expert-desk-ci-placeholder
+      AWS_S3_BUCKET: maibud-ci-placeholder
       AWS_ACCESS_KEY_ID: ci-placeholder
       AWS_SECRET_ACCESS_KEY: ci-placeholder
       RESEND_API_KEY: re_ci_placeholder
-      EMAIL_FROM: ExpertDesk <ci@example.com>
+      EMAIL_FROM: МайБуд <ci@example.com>
       EMAIL_JOB_SECRET: ci-email-job-secret-at-least-32-characters
       APP_URL: http://localhost:3000
 

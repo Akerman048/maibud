@@ -1,4 +1,4 @@
-# ExpertDesk Architecture
+# Maibud Architecture
 
 ## Stack
 
@@ -32,7 +32,7 @@ Deployment:
 
 ## Basic Idea
 
-ExpertDesk is a platform where organizations manage construction preparation projects, documents, document versions, reviews, comments, and activity history.
+Maibud is a platform where organizations manage construction preparation projects, documents, document versions, reviews, comments, and activity history.
 
 Users belong to organizations.
 Organizations have projects.
