@@ -1,9 +1,9 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
 import { z } from "zod";
 
 import type { UserRole } from "@/app/generated/prisma/client";
+import { verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
@@ -64,7 +64,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const passwordIsValid = await compare(
+        const passwordIsValid = await verifyPassword(
           parsed.data.password,
           user.passwordHash,
         );
