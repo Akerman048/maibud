@@ -18,6 +18,7 @@ type SidebarProps = {
   role: DashboardRole;
   unreadNotificationCount: number;
   mobile?: boolean;
+  onNavigate?: () => void;
   user: {
     name?: string | null;
     email?: string | null;
@@ -55,13 +56,14 @@ export function Sidebar({
   user,
   unreadNotificationCount,
   mobile = false,
+  onNavigate,
 }: SidebarProps) {
   const initials = getInitials(user.name);
 
   return (
     <aside
-      className={`flex min-h-screen w-[248px] shrink-0 flex-col bg-[var(--color-sidebar)] px-3 pb-5 ${
-        mobile ? "pt-[76px]" : "pt-5"
+      className={`flex shrink-0 flex-col bg-[var(--color-sidebar)] px-3 pb-5 ${
+        mobile ? "min-h-full w-full pt-[84px]" : "min-h-screen w-[248px] pt-5"
       }`}
     >
       <div className="mb-4 border-b border-white/10 px-3 pb-5">
@@ -81,6 +83,7 @@ export function Sidebar({
       <SidebarNav
         role={role}
         unreadNotificationCount={unreadNotificationCount}
+        onNavigate={onNavigate}
       />
 
       <div className="flex items-center gap-2.5 rounded-[10px] bg-white/5 p-3">
@@ -106,7 +109,7 @@ export function Sidebar({
       <form action={logout} className="mt-2">
         <button
           type="submit"
-          className="flex w-full items-center justify-center gap-2 rounded-[10px] px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white"
         >
           <FiLogOut className="size-4" />
           Вийти

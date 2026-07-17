@@ -46,7 +46,7 @@ export default async function ClientDashboardPage({ searchParams }: { searchPara
           </div>
           <DashboardStats stats={dashboard.stats} />
         </section>
-        <div className="flex flex-wrap items-center gap-3"><div className="min-w-[260px] flex-1"><SearchInput key={query.search} defaultValue={query.search} label="Пошук проєкту" /></div><PageSizeSelect value={query.pageSize} /></div>
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center"><div className="min-w-0 flex-1"><SearchInput key={query.search} defaultValue={query.search} label="Пошук проєкту" /></div><PageSizeSelect value={query.pageSize} /></div>
 
         {projects.length === 0 ? (
           <Card className="p-6 text-sm text-[var(--color-text-secondary)]">
@@ -61,11 +61,11 @@ export default async function ClientDashboardPage({ searchParams }: { searchPara
               >
                 <Card className="p-5 transition hover:border-slate-300 hover:shadow-md">
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <h2 className="font-semibold text-[var(--color-text-primary)]">
+                    <div className="min-w-0">
+                      <h2 className="break-words font-semibold text-[var(--color-text-primary)]">
                         {project.name}
                       </h2>
-                      <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                      <p className="mt-1 break-words text-sm text-[var(--color-text-secondary)]">
                         {project.address}
                       </p>
                       <p className="mt-2 text-sm text-[var(--color-text-muted)]">

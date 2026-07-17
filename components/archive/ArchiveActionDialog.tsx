@@ -64,7 +64,7 @@ export function ArchiveActionDialog({
               name="reason"
               maxLength={1000}
               rows={4}
-              className="rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-white px-3.5 py-3 text-sm outline-none focus:border-[var(--color-accent)] focus:ring-4 focus:ring-blue-500/15"
+              className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-white px-3.5 py-3 text-base outline-none focus:border-[var(--color-accent)] focus:ring-4 focus:ring-blue-500/15 sm:text-sm"
             />
             <p className="text-xs text-[var(--color-text-muted)]">
               Публікація для клієнта буде знята автоматично.
@@ -78,14 +78,14 @@ export function ArchiveActionDialog({
 
         {state.error ? <p className="text-sm font-medium text-red-600">{state.error}</p> : null}
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={isPending}>
+        <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isPending} className="w-full sm:w-auto">
             Скасувати
           </Button>
           <Button
             type="submit"
             disabled={isPending}
-            className={isArchive ? "bg-red-600 hover:bg-red-700" : ""}
+            className={`w-full sm:w-auto ${isArchive ? "bg-red-600 hover:bg-red-700" : ""}`}
           >
             {isPending
               ? "Збереження…"

@@ -25,7 +25,7 @@ export function SettingsView({ name, role, email }: SettingsViewProps) {
   );
 
   return (
-    <Card className="max-w-2xl p-6">
+    <Card className="max-w-2xl p-4 sm:p-6">
       <form action={action} className="flex flex-col gap-5">
         <div>
           <h2 className="text-lg font-semibold">Профіль користувача</h2>
@@ -56,7 +56,7 @@ export function SettingsView({ name, role, email }: SettingsViewProps) {
             </span>
             <p
               aria-labelledby="profile-email-label"
-              className="min-h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-slate-50 px-3.5 py-2 text-[15px] text-[var(--color-text-secondary)]"
+            className="min-h-11 break-words rounded-[var(--radius-md)] border border-[var(--color-border)] bg-slate-50 px-3.5 py-2 text-base text-[var(--color-text-secondary)] sm:text-[15px]"
             >
               {email || "Не вказано"}
             </p>
@@ -86,7 +86,7 @@ export function SettingsView({ name, role, email }: SettingsViewProps) {
         ) : null}
 
         <div>
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
             {isPending ? "Збереження…" : "Зберегти зміни"}
           </Button>
         </div>

@@ -19,16 +19,16 @@ export function DocumentsView({ documents }: DocumentsViewProps) {
 
         return (
           <Card key={document.id} className="p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
+            <div className="flex min-w-0 flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-start">
+              <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-slate-100 text-[var(--color-text-secondary)]">
                   <FiFileText className="size-5" />
                 </div>
 
-                <div>
-                  <div className="font-semibold">{document.name}</div>
+                <div className="min-w-0">
+                  <div className="break-words font-semibold">{document.name}</div>
 
-                  <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                  <div className="mt-1 break-words text-sm text-[var(--color-text-secondary)]">
                     {document.project} · {document.type} · {document.latestVersion
                       ? `v${document.latestVersion}`
                       : "версій немає"}
@@ -49,12 +49,12 @@ export function DocumentsView({ documents }: DocumentsViewProps) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between gap-3 sm:justify-start">
                 <Badge variant={statusMeta.variant}>
                   {statusMeta.label}
                 </Badge>
 
-                <button className="flex size-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white hover:bg-slate-50">
+                <button aria-label={`Завантажити ${document.name}`} className="flex size-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white hover:bg-slate-50">
                   <FiDownload className="size-4 text-[var(--color-text-secondary)]" />
                 </button>
               </div>

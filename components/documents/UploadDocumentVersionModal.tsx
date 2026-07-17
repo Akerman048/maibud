@@ -141,12 +141,13 @@ export function UploadDocumentVersionModal({
           </p>
         )}
 
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
           <Button
             type="button"
             variant="secondary"
             onClick={onClose}
             disabled={isPending}
+            className="w-full sm:w-auto"
           >
             Скасувати
           </Button>
@@ -155,6 +156,7 @@ export function UploadDocumentVersionModal({
             type="button"
             onClick={handleSubmit}
             disabled={isPending || !file}
+            className="w-full sm:w-auto"
           >
             {isPending ? "Завантаження..." : "Завантажити версію"}
           </Button>

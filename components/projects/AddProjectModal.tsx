@@ -84,7 +84,7 @@ export function AddProjectModal({
           />{" "}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-semibold">Етап</label>
             <Select
@@ -111,12 +111,12 @@ export function AddProjectModal({
           <Input name="deadline" type="date" required />
         </div>
 
-        <div className="mt-2 flex justify-end gap-3">
-          <Button type="button" variant="secondary" onClick={onClose}>
+        <div className="mt-2 flex flex-col-reverse justify-end gap-3 sm:flex-row">
+          <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto">
             Скасувати
           </Button>
 
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
             {isPending ? "Створення..." : "Створити проєкт"}
           </Button>
         </div>

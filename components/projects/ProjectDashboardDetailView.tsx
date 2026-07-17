@@ -141,10 +141,10 @@ export function ProjectDashboardDetailView({
         Назад до проєктів
       </Link>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+      <div className="flex min-w-0 flex-col items-stretch justify-between gap-4 sm:flex-row sm:flex-wrap sm:items-start">
+        <div className="min-w-0">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-[-0.01em]">
+          <h1 className="break-words text-xl font-bold tracking-[-0.01em] sm:text-2xl">
             {project.name}
           </h1>
 
@@ -152,12 +152,12 @@ export function ProjectDashboardDetailView({
           {isProjectArchived ? <Badge variant="warning">Архів</Badge> : null}
         </div>
 
-        <p className="text-[14.5px] text-[var(--color-text-secondary)]">
+        <p className="break-words text-[14.5px] text-[var(--color-text-secondary)]">
           {project.address}
         </p>
         </div>
         {canManageArchive && !isProjectArchived && archiveProjectAction ? (
-          <Button type="button" variant="secondary" onClick={() => setArchiveProjectOpen(true)}>
+          <Button type="button" variant="secondary" onClick={() => setArchiveProjectOpen(true)} className="w-full sm:w-auto">
             Архівувати проєкт
           </Button>
         ) : null}
@@ -178,7 +178,7 @@ export function ProjectDashboardDetailView({
               key={tab.value}
               type="button"
               onClick={() => handleTabChange(tab.value)}
-              className={`relative shrink-0 px-4 py-3 text-sm font-semibold transition ${
+              className={`relative min-h-11 shrink-0 px-4 py-3 text-sm font-semibold transition ${
                 isActive
                   ? "text-[var(--color-accent)]"
                   : "text-[var(--color-text-secondary)] hover:text-slate-700"
@@ -196,11 +196,11 @@ export function ProjectDashboardDetailView({
 
       {activeTab === "overview" && (
         <div className="flex flex-col gap-5">
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             <ProjectInfoGrid project={project} />
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             <h2 className="mb-5 text-lg font-semibold">
               Останні оновлення
             </h2>
@@ -253,7 +253,7 @@ export function ProjectDashboardDetailView({
       {activeTab === "documents" && (
         <div className="flex flex-col gap-5">
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
+            <div className="flex flex-col items-stretch justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4 sm:flex-row sm:items-center">
               <h2 className="font-semibold">Документи проєкту</h2>
 
               {createCommentAction && !isProjectArchived && (
@@ -292,12 +292,12 @@ export function ProjectDashboardDetailView({
                                 : document.id,
                             )
                           }
-                          className="text-left font-semibold hover:text-[var(--color-accent)]"
+                          className="min-h-11 break-words text-left font-semibold hover:text-[var(--color-accent)]"
                         >
                           {document.name}
                         </button>
 
-                        <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                        <div className="mt-1 break-words text-sm text-[var(--color-text-secondary)]">
                           {document.type} · {document.latestVersion
                             ? `Остання версія: v${document.latestVersion}`
                             : "Версій немає"}
@@ -320,8 +320,8 @@ export function ProjectDashboardDetailView({
                           )}
                       </div>
 
-                      <div className="flex shrink-0 flex-col items-end gap-3">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
+                      <div className="flex w-full shrink-0 flex-col items-stretch gap-3 lg:w-auto lg:items-end">
+                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                           {document.isPublishedToClient && (
                             <Badge variant="success">Для клієнта</Badge>
                           )}
@@ -394,7 +394,7 @@ export function ProjectDashboardDetailView({
       )}
 
       {activeTab === "journal" && (
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <h2 className="mb-5 text-lg font-semibold">Журнал подій</h2>
 
           {auditLogs.length === 0 ? (
@@ -425,7 +425,7 @@ export function ProjectDashboardDetailView({
                     </p>
                   )}
 
-                  <div className="mt-3 flex items-center justify-between gap-4">
+                  <div className="mt-3 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
                     <span className="text-sm text-[var(--color-text-muted)]">
                       {log.createdAt}
                     </span>

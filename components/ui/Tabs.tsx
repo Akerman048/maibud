@@ -14,7 +14,7 @@ type TabsProps = {
 
 export function Tabs({ items, activeValue, onChange }: TabsProps) {
   return (
-    <div className="flex gap-1 border-b border-[var(--color-border)]">
+    <div className="flex max-w-full gap-1 overflow-x-auto border-b border-[var(--color-border)]">
       {items.map((item) => {
         const isActive = item.value === activeValue;
 
@@ -24,7 +24,7 @@ export function Tabs({ items, activeValue, onChange }: TabsProps) {
             type="button"
             onClick={() => onChange?.(item.value)}
             className={`
-              border-b-2 px-4 py-2 text-sm font-semibold transition
+              min-h-11 shrink-0 border-b-2 px-4 py-2 text-sm font-semibold transition
               ${
                 isActive
                   ? "border-[var(--color-accent)] text-[var(--color-accent)]"

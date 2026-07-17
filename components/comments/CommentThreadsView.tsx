@@ -58,7 +58,7 @@ export function CommentThreadsView({
                 <div className="flex flex-col justify-between gap-5 md:flex-row">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold">
+                      <h3 className="break-words font-semibold">
                         {thread.title ?? thread.documentTitle}
                       </h3>
                       <Badge variant={getStatusVariant(thread.status)}>
@@ -66,7 +66,7 @@ export function CommentThreadsView({
                       </Badge>
                     </div>
 
-                    <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                    <div className="mt-1 break-words text-sm text-[var(--color-text-secondary)]">
                       {thread.projectName} · {thread.documentTitle}
                       {thread.version ? ` · v${thread.version}` : ""}
                     </div>
@@ -87,7 +87,7 @@ export function CommentThreadsView({
                   </div>
 
                   {detailBaseHref && (
-                    <Button asChild variant="secondary" className="shrink-0 self-start">
+                    <Button asChild variant="secondary" className="w-full shrink-0 self-start md:w-auto">
                       <Link href={`${detailBaseHref}/${thread.id}`}>
                         Відкрити обговорення
                       </Link>

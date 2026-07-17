@@ -71,7 +71,7 @@ function RejectDocumentModal({
             maxLength={2000}
             required
             disabled={isPending}
-            className="min-h-32 resize-y rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)] disabled:bg-slate-50"
+            className="min-h-32 w-full resize-y rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-base outline-none focus:border-[var(--color-accent)] disabled:bg-slate-50 sm:text-sm"
           />
         </div>
 
@@ -84,16 +84,17 @@ function RejectDocumentModal({
           </p>
         )}
 
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
           <Button
             type="button"
             variant="secondary"
             onClick={onClose}
             disabled={isPending}
+            className="w-full sm:w-auto"
           >
             Скасувати
           </Button>
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
             {isPending ? "Відхилення..." : "Відхилити документ"}
           </Button>
         </div>
@@ -121,8 +122,8 @@ export function DocumentReviewActions({
 
   return (
     <>
-      <div className="flex flex-col items-end gap-2">
-        <div className="flex flex-wrap justify-end gap-2">
+      <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           <form action={approveFormAction}>
             <input
               type="hidden"

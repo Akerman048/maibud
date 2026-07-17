@@ -44,20 +44,20 @@ export function CommentsView({
     <div className="grid gap-4">
       {comments.map((comment) => (
         <Card key={comment.id} className="p-5">
-          <div className="flex items-start justify-between gap-5">
-            <div>
-              <div className="font-semibold">{comment.section}</div>
+          <div className="flex min-w-0 flex-col items-stretch justify-between gap-5 sm:flex-row sm:items-start">
+            <div className="min-w-0">
+              <div className="break-words font-semibold">{comment.section}</div>
 
-              <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              <div className="mt-1 break-words text-sm text-[var(--color-text-secondary)]">
                 {comment.projectName} · {comment.documentTitle}
               </div>
 
-              <p className="mt-3 text-sm leading-6 text-[var(--color-text-secondary)]">
+              <p className="mt-3 break-words text-sm leading-6 text-[var(--color-text-secondary)]">
                 {comment.text}
               </p>
             </div>
 
-            <div className="flex shrink-0 flex-col items-end gap-3">
+            <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
               <Badge variant={getStatusVariant(comment.status)}>
                 {getStatusLabel(comment.status)}
               </Badge>

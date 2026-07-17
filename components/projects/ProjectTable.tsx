@@ -39,7 +39,37 @@ export function ProjectTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      <div className="grid gap-4 md:hidden">
+        {projects.map((project) => (
+          <article key={project.id} className="min-w-0 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <Link href={`${baseHref}/${project.id}`} className="break-words font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-accent)]">
+                  {project.name}
+                </Link>
+                <p className="mt-1 break-words text-sm text-[var(--color-text-secondary)]">{project.address}</p>
+              </div>
+              <ProjectRowActions
+                project={project}
+                baseHref={baseHref}
+                experts={experts}
+                updateProjectAction={updateProjectAction}
+                archiveProjectAction={archiveProjectAction}
+              />
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-3 text-sm min-[390px]:grid-cols-2">
+              <div className="min-w-0"><span className="text-[var(--color-text-muted)]">Замовник</span><p className="break-words font-medium">{project.customer}</p></div>
+              <div className="min-w-0"><span className="text-[var(--color-text-muted)]">Етап</span><p className="break-words">{project.stage}</p></div>
+              <div className="min-w-0"><span className="text-[var(--color-text-muted)]">Експерт</span><p className="break-words">{project.expert}</p></div>
+              <div><span className="text-[var(--color-text-muted)]">Дедлайн</span><p className="font-medium">{project.deadline}</p></div>
+            </div>
+            <div className="mt-4"><StatusBadge status={project.status} /></div>
+          </article>
+        ))}
+      </div>
+
+      <div className="hidden w-full min-w-0 max-w-full overflow-x-auto md:block">
       <div className="min-w-[980px]">
         <Table>
           <thead className="bg-slate-50">
@@ -120,6 +150,7 @@ export function ProjectTable({
           </tbody>
         </Table>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -96,18 +96,18 @@ export function CommentThreadDetail({
         Назад до зауважень
       </Link>
 
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row">
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-bold">
+              <h1 className="break-words text-xl font-bold sm:text-2xl">
                 {thread.title ?? "Обговорення документа"}
               </h1>
               <Badge variant={statusVariant(thread.status)}>
                 {getCommentThreadStatusLabel(thread.status)}
               </Badge>
             </div>
-            <p className="mt-2 text-[var(--color-text-secondary)]">
+            <p className="mt-2 break-words text-[var(--color-text-secondary)]">
               {thread.projectName} · {thread.documentTitle}
               {thread.version ? ` · версія ${thread.version}` : ""}
             </p>
@@ -125,9 +125,9 @@ export function CommentThreadDetail({
         {thread.messages.map((message) => {
           return (
             <Card key={message.id} className="p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="font-semibold">
+              <div className="flex min-w-0 items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="break-words font-semibold">
                     {message.authorName}
                     <span className="ml-2 text-xs font-normal text-[var(--color-text-muted)]">
                       {message.authorRole}
@@ -150,7 +150,7 @@ export function CommentThreadDetail({
               </div>
 
               <p
-                className={`mt-4 whitespace-pre-wrap text-sm leading-6 ${
+                className={`mt-4 break-words whitespace-pre-wrap text-sm leading-6 ${
                   message.isDeleted
                     ? "italic text-[var(--color-text-muted)]"
                     : "text-[var(--color-text-secondary)]"
@@ -186,7 +186,7 @@ export function CommentThreadDetail({
             <Button
               type="submit"
               disabled={thread.status === "resolved" || replyPending}
-              className="self-end"
+              className="w-full self-end sm:w-auto"
             >
               {replyPending ? "Надсилання…" : "Надіслати"}
             </Button>
@@ -195,10 +195,10 @@ export function CommentThreadDetail({
       )}
 
       {role === "DESIGNER" && thread.status !== "resolved" && (
-        <form action={resolveFormAction} className="flex flex-col items-end gap-2">
+        <form action={resolveFormAction} className="flex flex-col items-stretch gap-2 sm:items-end">
           <input type="hidden" name="threadId" value={thread.id} />
           <ActionMessage state={resolveState} />
-          <Button type="submit" disabled={resolvePending}>
+          <Button type="submit" disabled={resolvePending} className="w-full sm:w-auto">
             {resolvePending ? "Збереження…" : "Позначити виконаним"}
           </Button>
         </form>
@@ -216,7 +216,7 @@ export function CommentThreadDetail({
               disabled={returnPending}
             />
             <ActionMessage state={returnState} />
-            <Button type="submit" disabled={returnPending} className="self-end">
+            <Button type="submit" disabled={returnPending} className="w-full self-end sm:w-auto">
               {returnPending ? "Повернення…" : "Повернути на доопрацювання"}
             </Button>
           </form>

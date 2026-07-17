@@ -16,6 +16,7 @@ import { SidebarNavItem } from "./SidebarNavItem";
 type SidebarNavProps = {
   role: DashboardRole;
   unreadNotificationCount: number;
+  onNavigate?: () => void;
 };
 
 const navByRole = {
@@ -82,7 +83,7 @@ const navByRole = {
   ],
 };
 
-export function SidebarNav({ role, unreadNotificationCount }: SidebarNavProps) {
+export function SidebarNav({ role, unreadNotificationCount, onNavigate }: SidebarNavProps) {
   const navItems = navByRole[role];
 
   return (
@@ -93,6 +94,7 @@ export function SidebarNav({ role, unreadNotificationCount }: SidebarNavProps) {
           label={item.label}
           href={item.href}
           icon={item.icon}
+          onNavigate={onNavigate}
           badge={
             item.label === "Сповіщення"
               ? unreadNotificationCount > 0

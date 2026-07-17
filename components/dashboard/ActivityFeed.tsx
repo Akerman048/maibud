@@ -13,12 +13,12 @@ function ActivityContent({ item }: { item: ActivityFeedItem }) {
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        <p className="text-sm text-[var(--color-text-primary)]">
+        <p className="break-words text-sm text-[var(--color-text-primary)]">
           <span className="font-semibold">{item.actorName ?? "Система"}</span>{" "}
           {item.action.toLocaleLowerCase("uk-UA")}
         </p>
         {item.projectName ? (
-          <p className="mt-1 truncate text-xs text-[var(--color-text-secondary)]">
+          <p className="mt-1 break-words text-xs text-[var(--color-text-secondary)]">
             Проєкт: {item.projectName}
           </p>
         ) : null}

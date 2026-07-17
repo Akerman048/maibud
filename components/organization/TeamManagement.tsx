@@ -110,7 +110,7 @@ function CopyInviteLink({ inviteUrl }: { inviteUrl: string }) {
       <p className="text-sm font-semibold text-blue-900">
         Email delivery ще не підключено. Надішліть це посилання вручну.
       </p>
-      <div className="mt-2 flex items-center gap-2">
+      <div className="mt-2 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
         <code className="min-w-0 flex-1 truncate text-xs text-blue-800">
           {inviteUrl}
         </code>
@@ -198,11 +198,11 @@ function CreateInvitationModal({
         )}
         {state.inviteUrl && <CopyInviteLink inviteUrl={state.inviteUrl} />}
 
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={onClose}>
+        <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+          <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto">
             Закрити
           </Button>
-          <Button type="submit" disabled={isPending || Boolean(state.inviteUrl)}>
+          <Button type="submit" disabled={isPending || Boolean(state.inviteUrl)} className="w-full sm:w-auto">
             {isPending ? "Створення..." : "Створити запрошення"}
           </Button>
         </div>
@@ -247,7 +247,7 @@ function MemberActions({
           name="organizationMemberId"
           value={member.id}
         />
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Select
             name="role"
             defaultValue={member.role}
@@ -255,7 +255,7 @@ function MemberActions({
             disabled={rolePending}
             className="min-w-0 flex-1"
           />
-          <Button type="submit" variant="secondary" disabled={rolePending}>
+          <Button type="submit" variant="secondary" disabled={rolePending} className="w-full sm:w-auto">
             Змінити роль
           </Button>
         </div>
@@ -270,7 +270,7 @@ function MemberActions({
             name="organizationMemberId"
             value={member.id}
           />
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Select
               name="projectId"
               options={availableProjects.map((project) => ({
@@ -284,6 +284,7 @@ function MemberActions({
               type="submit"
               variant="secondary"
               disabled={projectPending}
+              className="w-full sm:w-auto"
             >
               Додати
             </Button>
@@ -343,7 +344,7 @@ function ProjectMembership({
           disabled={isPending}
           title="Видалити з проєкту"
           aria-label={`Видалити з проєкту ${membership.name}`}
-          className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-700"
+          className="flex size-11 items-center justify-center rounded text-slate-400 hover:bg-red-50 hover:text-red-700"
         >
           <FiTrash2 className="size-3.5" />
         </button>
@@ -430,8 +431,8 @@ export function TeamManagement({
 
   return (
     <>
-      <div className="flex justify-end">
-        <Button type="button" onClick={() => setInviteOpen(true)}>
+      <div className="flex justify-stretch sm:justify-end">
+        <Button type="button" onClick={() => setInviteOpen(true)} className="w-full sm:w-auto">
           <FiPlus className="mr-2 size-4" />
           Запросити користувача
         </Button>
@@ -460,9 +461,9 @@ export function TeamManagement({
           {members.map((member) => (
             <Card key={member.id} className="p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="font-semibold">{member.name}</div>
-                  <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                <div className="min-w-0">
+                  <div className="break-words font-semibold">{member.name}</div>
+                  <div className="mt-1 break-all text-sm text-[var(--color-text-secondary)]">
                     {member.email}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -480,7 +481,7 @@ export function TeamManagement({
                     )}
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <Badge variant={member.isActive ? "success" : "danger"}>
                     {member.isActive ? "Активний" : "Вимкнений"}
                   </Badge>
@@ -514,8 +515,8 @@ export function TeamManagement({
           {invitations.map((invitation) => (
             <Card key={invitation.id} className="p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="font-semibold">{invitation.email}</div>
+                <div className="min-w-0">
+                  <div className="break-all font-semibold">{invitation.email}</div>
                   <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
                     {getUserRoleLabel(invitation.role)}
                     {invitation.project ? ` · ${invitation.project.name}` : ""}
@@ -524,7 +525,7 @@ export function TeamManagement({
                     Запросив: {invitation.invitedByName}
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <Badge
                     variant={
                       invitation.status === "EXPIRED" ? "danger" : "warning"

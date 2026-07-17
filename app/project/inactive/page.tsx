@@ -3,8 +3,8 @@ import { BRAND_NAME } from "@/lib/brand";
 
 export default function InactiveProjectLinkPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--color-background)] p-8">
-      <div className="flex min-h-[520px] w-full max-w-[880px] flex-col items-center justify-center rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-8 text-center shadow-[var(--shadow-sm)]">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-[var(--color-background)] p-4 sm:p-8">
+      <div className="flex min-h-[min(520px,calc(100dvh-2rem))] w-full max-w-[880px] flex-col items-center justify-center rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 text-center shadow-[var(--shadow-sm)] sm:p-8">
         <div className="mb-5 flex size-[72px] items-center justify-center rounded-full bg-slate-100 text-[var(--color-text-muted)]">
           <FiLink className="size-8" />
         </div>

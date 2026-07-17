@@ -225,26 +225,27 @@ export function DocumentVersions({
     <>
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-4 border-b border-[var(--color-border)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+          <div className="min-w-0">
             <h3 className="font-semibold">Історія версій</h3>
 
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+            <p className="mt-1 break-words text-sm text-[var(--color-text-secondary)]">
               {documentName}
             </p>
           </div>
 
           {canUpload && (
-            <div className="flex max-w-md flex-col items-end gap-2">
+            <div className="flex max-w-md flex-col items-stretch gap-2 sm:items-end">
               <Button
                 type="button"
                 onClick={() => setIsUploadOpen(true)}
                 disabled={!canUploadCurrentStatus}
+                className="w-full sm:w-auto"
               >
                 Завантажити нову версію
               </Button>
 
               {uploadGuidance && (
-                <p className="text-right text-xs text-[var(--color-text-muted)]">
+                <p className="break-words text-left text-xs text-[var(--color-text-muted)] sm:text-right">
                   {uploadGuidance}
                 </p>
               )}
@@ -290,29 +291,30 @@ export function DocumentVersions({
                   key={version.id}
                   className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <div className="font-semibold">
                       v{version.version}
                       {index === 0 ? " · Поточна версія" : ""}
                     </div>
 
-                    <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                    <div className="mt-1 break-all text-sm text-[var(--color-text-secondary)]">
                       {version.fileName}
                     </div>
 
-                    <div className="mt-1 text-xs text-[var(--color-text-muted)]">
+                    <div className="mt-1 break-words text-xs text-[var(--color-text-muted)]">
                       {formatFileSize(version.fileSize)} ·{" "}
                       {version.uploadedBy} · {version.createdAt}
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 flex-wrap gap-2">
+                  <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
                     {canPreview && (
                       <Button
                         type="button"
                         variant="secondary"
                         onClick={() => void handlePreview(version)}
                         disabled={openingVersionId === version.id}
+                        className="w-full sm:w-auto"
                       >
                         <FiExternalLink className="mr-2 size-4" />
 
@@ -327,6 +329,7 @@ export function DocumentVersions({
                       variant="secondary"
                       onClick={() => void handleDownload(version.id)}
                       disabled={downloadingVersionId === version.id}
+                      className="w-full sm:w-auto"
                     >
                       <FiDownload className="mr-2 size-4" />
 

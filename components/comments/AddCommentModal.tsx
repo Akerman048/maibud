@@ -110,12 +110,12 @@ export function AddCommentModal({
           </p>
         )}
 
-        <div className="mt-2 flex justify-end gap-3">
-          <Button type="button" variant="secondary" onClick={onClose}>
+        <div className="mt-2 flex flex-col-reverse justify-end gap-3 sm:flex-row">
+          <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto">
             Скасувати
           </Button>
 
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
             {isPending ? "Створення..." : "Створити зауваження"}
           </Button>
         </div>

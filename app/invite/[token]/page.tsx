@@ -14,8 +14,8 @@ function InvitationMessage({
   description: string;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--color-background)] p-5">
-      <Card className="w-full max-w-lg p-8 text-center">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-[var(--color-background)] p-4 sm:p-5">
+      <Card className="w-full min-w-0 max-w-lg p-5 text-center sm:p-8">
         <h1 className="text-2xl font-bold">{title}</h1>
         <p className="mt-3 text-[var(--color-text-secondary)]">
           {description}
@@ -73,14 +73,14 @@ export default async function InvitationPage({
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--color-background)] p-5">
-      <Card className="w-full max-w-lg p-7 sm:p-8">
-        <div className="flex items-center justify-between gap-4">
-          <div>
+    <main className="flex min-h-[100dvh] items-center justify-center bg-[var(--color-background)] p-4 sm:p-5">
+      <Card className="w-full min-w-0 max-w-lg p-5 sm:p-8">
+        <div className="flex min-w-0 flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="min-w-0">
             <p className="text-sm font-semibold text-[var(--color-accent)]">
               Запрошення до організації
             </p>
-            <h1 className="mt-1 text-2xl font-bold">
+            <h1 className="mt-1 break-words text-2xl font-bold">
               {invitation.organizationName}
             </h1>
           </div>
@@ -90,17 +90,17 @@ export default async function InvitationPage({
         </div>
 
         <dl className="mt-6 grid gap-3 rounded-lg bg-slate-50 p-4 text-sm">
-          <div className="flex justify-between gap-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
             <dt className="text-[var(--color-text-secondary)]">Email</dt>
-            <dd className="font-semibold">{invitation.email}</dd>
+            <dd className="break-all font-semibold">{invitation.email}</dd>
           </div>
           {invitation.projectName && (
-            <div className="flex justify-between gap-4">
+            <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
               <dt className="text-[var(--color-text-secondary)]">Проєкт</dt>
-              <dd className="font-semibold">{invitation.projectName}</dd>
+              <dd className="break-words font-semibold">{invitation.projectName}</dd>
             </div>
           )}
-          <div className="flex justify-between gap-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
             <dt className="text-[var(--color-text-secondary)]">Діє до</dt>
             <dd className="font-semibold">
               {new Date(invitation.expiresAt).toLocaleString("uk-UA")}

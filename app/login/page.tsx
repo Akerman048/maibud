@@ -18,10 +18,10 @@ export default async function LoginPage({
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--color-background)] p-5">
-      <Card className="w-full max-w-md p-7 sm:p-8">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-[var(--color-background)] p-4 sm:p-5">
+      <Card className="w-full min-w-0 max-w-md p-5 sm:p-8">
         <div className="mb-7">
-          <div className="inline-flex rounded-[var(--radius-lg)] bg-[var(--color-sidebar)] px-3 py-2">
+          <div className="inline-flex max-w-full rounded-[var(--radius-lg)] bg-[var(--color-sidebar)] px-3 py-2">
             <Image
               src="/maibud-logo.png"
               alt="МайБуд — Будуємо порядок."
@@ -29,7 +29,7 @@ export default async function LoginPage({
               height={168}
               priority
               unoptimized
-              className="h-12 w-auto"
+              className="h-auto max-h-12 w-full object-contain"
             />
           </div>
 

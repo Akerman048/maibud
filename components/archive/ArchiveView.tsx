@@ -25,7 +25,7 @@ export function ArchiveView({
 
   return (
     <div className="flex flex-col gap-5">
-      <form className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 lg:grid-cols-6">
+      <form className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 sm:grid-cols-2 lg:grid-cols-6">
         <label htmlFor="archive-search" className="sr-only">Пошук в архіві</label>
         <Input id="archive-search" name="search" defaultValue={search} placeholder="Назва, адреса, документ…" className="lg:col-span-2" />
         <label htmlFor="archive-actor" className="sr-only">Хто архівував</label>
@@ -37,7 +37,7 @@ export function ArchiveView({
           id="archive-previous-status"
           name="previousStatus"
           defaultValue={previousStatus ?? ""}
-          className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-white px-3 text-sm"
+          className="h-11 min-w-0 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-white px-3 text-base sm:text-sm"
         >
           <option value="">Попередній статус</option>
           <option value="OPEN">OPEN</option>
@@ -52,15 +52,15 @@ export function ArchiveView({
           id="archive-page-size"
           name="pageSize"
           defaultValue={String(result.pageSize)}
-          className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-white px-3 text-sm"
+          className="h-11 min-w-0 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-white px-3 text-base sm:text-sm"
         >
           <option value="10">10 на сторінці</option>
           <option value="20">20 на сторінці</option>
           <option value="50">50 на сторінці</option>
         </select>
-        <div className="flex gap-2 lg:col-span-5 lg:justify-end">
-          <Button type="submit">Застосувати</Button>
-          <Button asChild type="button" variant="secondary">
+        <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row lg:col-span-5 lg:justify-end">
+          <Button type="submit" className="w-full sm:w-auto">Застосувати</Button>
+          <Button asChild type="button" variant="secondary" className="w-full sm:w-auto">
             <Link href={baseHref}>Очистити</Link>
           </Button>
         </div>
@@ -68,7 +68,7 @@ export function ArchiveView({
 
       <ArchiveTable projects={result.projects} baseHref={baseHref} />
 
-      <div className="flex justify-end"><PageSizeSelect value={result.pageSize} /></div>
+      <div className="flex justify-stretch sm:justify-end"><PageSizeSelect value={result.pageSize} /></div>
       <Pagination pagination={{ page: result.page, pageSize: result.pageSize, total: result.total, totalPages: result.totalPages, hasNextPage: result.page < result.totalPages, hasPreviousPage: result.page > 1 }} />
     </div>
   );

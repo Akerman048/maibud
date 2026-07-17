@@ -64,8 +64,8 @@ export function NotificationsView({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
           {filters.map((item) => (
             <Button
               key={item.value}
@@ -84,6 +84,7 @@ export function NotificationsView({
           variant="secondary"
           disabled={isPending || data.unreadCount === 0}
           onClick={markAllRead}
+          className="w-full sm:w-auto"
         >
           {isPending ? "Оновлення…" : "Позначити всі прочитаними"}
         </Button>
@@ -108,15 +109,15 @@ export function NotificationsView({
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[var(--color-accent)]">
                     <FiBell className="size-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold">{item.title}</h3>
+                      <h3 className="break-words font-semibold">{item.title}</h3>
                       {!item.isRead && <Badge variant="info">Нове</Badge>}
                     </div>
-                    <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                    <p className="mt-2 break-words text-sm text-[var(--color-text-secondary)]">
                       {item.message}
                     </p>
-                    <div className="mt-3 text-xs text-[var(--color-text-muted)]">
+                    <div className="mt-3 break-words text-xs text-[var(--color-text-muted)]">
                       {item.actorName ? `Від: ${item.actorName} · ` : ""}
                       {item.projectName ? `${item.projectName} · ` : ""}
                       {new Date(item.createdAt).toLocaleString("uk-UA", { timeZone: "UTC" })}

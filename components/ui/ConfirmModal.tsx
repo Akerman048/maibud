@@ -20,19 +20,19 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   return (
     <Modal title={title} description={description} onClose={onClose}>
-      <div className="flex justify-end gap-3">
-        <Button type="button" variant="secondary" onClick={onClose}>
+      <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
+        <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto">
           Скасувати
         </Button>
 
         <Button
           type="button"
           onClick={onConfirm}
-          className={
+          className={`w-full sm:w-auto ${
             variant === "danger"
               ? "bg-red-600 hover:bg-red-700"
               : ""
-          }
+          }`}
         >
           {confirmText}
         </Button>

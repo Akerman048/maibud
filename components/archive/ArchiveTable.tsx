@@ -21,7 +21,22 @@ export function ArchiveTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white">
+    <>
+      <div className="grid gap-4 md:hidden">
+        {projects.map((project) => (
+          <article key={project.id} className="min-w-0 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4">
+            <Link href={`${baseHref}/${project.id}`} className="break-words font-semibold hover:text-[var(--color-accent)]">{project.name}</Link>
+            <p className="mt-1 break-words text-sm text-[var(--color-text-secondary)]">{project.address} · {project.customer}</p>
+            <div className="mt-4"><Badge variant={project.status === "ARCHIVED" ? "warning" : "default"}>{project.status === "ARCHIVED" ? "Проєкт в архіві" : "Архівні документи"}</Badge></div>
+            <dl className="mt-4 grid grid-cols-1 gap-3 text-sm min-[390px]:grid-cols-2">
+              <div><dt className="text-[var(--color-text-muted)]">Документи</dt><dd>{project.documentsArchived} з {project.documentsTotal}</dd></div>
+              <div className="min-w-0"><dt className="text-[var(--color-text-muted)]">Архівував</dt><dd className="break-words">{project.archivedByName ?? "—"}</dd></div>
+              <div><dt className="text-[var(--color-text-muted)]">Дата</dt><dd>{project.archivedAt ? new Date(project.archivedAt).toLocaleDateString("uk-UA") : "—"}</dd></div>
+            </dl>
+          </article>
+        ))}
+      </div>
+      <div className="hidden w-full min-w-0 max-w-full overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white md:block">
       <table className="min-w-[900px] w-full text-left">
         <thead className="bg-slate-50 text-xs uppercase text-[var(--color-text-muted)]">
           <tr>
@@ -63,6 +78,7 @@ export function ArchiveTable({
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

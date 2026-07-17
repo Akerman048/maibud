@@ -34,7 +34,7 @@ export async function DashboardLayout({
   );
 
   return (
-    <main className="flex min-h-screen bg-[var(--color-background)]">
+    <main className="flex min-h-screen min-w-0 bg-[var(--color-background)]">
       <div className="hidden lg:block">
         <Sidebar
           role={role}
@@ -49,7 +49,7 @@ export async function DashboardLayout({
         unreadNotificationCount={unreadNotificationCount}
       />
 
-      <section className="flex-1 p-5 pt-16 lg:p-8">
+      <section className="min-w-0 flex-1 px-4 pb-6 pt-20 sm:px-6 sm:pb-8 lg:p-8">
         {children}
       </section>
     </main>

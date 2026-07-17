@@ -18,7 +18,7 @@ const steps: Step[] = [
 
 export function ProjectStepper({ currentStep }: ProjectStepperProps) {
   return (
-    <div className="grid grid-cols-5">
+    <div className="flex flex-col gap-4 sm:grid sm:grid-cols-5 sm:gap-0">
       {steps.map((step, index) => {
         const stepNumber = index + 1;
         const isCompleted = stepNumber < currentStep;
@@ -27,12 +27,12 @@ export function ProjectStepper({ currentStep }: ProjectStepperProps) {
         return (
           <div
             key={step.label}
-            className="relative flex flex-col items-center text-center"
+            className="relative flex min-w-0 items-center gap-3 text-left sm:flex-col sm:gap-0 sm:text-center"
           >
             {index !== steps.length - 1 && (
               <div
                 className={`
-                  absolute left-1/2 right-[-50%] top-[15px] h-[3px]
+                  absolute left-1/2 right-[-50%] top-[15px] hidden h-[3px] sm:block
                   ${isCompleted ? "bg-[var(--color-success)]" : "bg-[var(--color-border)]"}
                 `}
               />
@@ -55,7 +55,7 @@ export function ProjectStepper({ currentStep }: ProjectStepperProps) {
 
             <div
               className={`
-                mt-2.5 text-[13.5px] font-semibold
+                break-words text-[13.5px] font-semibold sm:mt-2.5
                 ${
                   isCompleted
                     ? "text-green-700"

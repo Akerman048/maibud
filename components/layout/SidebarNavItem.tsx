@@ -9,6 +9,7 @@ type SidebarNavItemProps = {
   href: string;
   icon: IconType;
   badge?: number | string;
+  onNavigate?: () => void;
 };
 
 export function SidebarNavItem({
@@ -16,6 +17,7 @@ export function SidebarNavItem({
   href,
   icon: Icon,
   badge,
+  onNavigate,
 }: SidebarNavItemProps) {
 
   const pathname = usePathname();
@@ -31,9 +33,10 @@ const isActive = isDashboardRoot
   return (
     <Link
       href={href}
+      onClick={onNavigate}
       className={`
-        flex items-center gap-3 rounded-[var(--radius-md)]
-        px-3 py-2.5 text-[15px] transition
+        flex min-h-11 items-center gap-3 rounded-[var(--radius-md)]
+        px-3 py-2.5 text-[15px] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white
         ${
           isActive
             ? "bg-blue-500/20 font-semibold !text-white"
@@ -43,10 +46,10 @@ const isActive = isDashboardRoot
     >
       <Icon className="size-[18px] shrink-0" />
 
-      <span className="flex-1">{label}</span>
+      <span className="min-w-0 flex-1 break-words">{label}</span>
 
       {badge !== undefined && (
-        <span className="rounded-full bg-[var(--color-warning)] px-2 py-0.5 text-xs font-bold !text-white">
+        <span className="shrink-0 rounded-full bg-[var(--color-warning)] px-2 py-0.5 text-xs font-bold !text-white">
           {badge}
         </span>
       )}

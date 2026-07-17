@@ -37,7 +37,7 @@ export function FileUploadBox({
           selectFile(event.dataTransfer.files[0]);
         }
       }}
-      className={`rounded-[var(--radius-lg)] border-2 border-dashed p-6 text-center transition ${
+      className={`min-w-0 rounded-[var(--radius-lg)] border-2 border-dashed p-4 text-center transition sm:p-6 ${
         isDragging
           ? "border-[var(--color-accent)] bg-blue-50"
           : "border-[var(--color-border)]"
@@ -55,7 +55,7 @@ export function FileUploadBox({
       {file ? (
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0 text-left">
-            <div className="truncate font-semibold">{file.name}</div>
+            <div className="break-all font-semibold">{file.name}</div>
 
             <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
               {(file.size / 1024 / 1024).toFixed(2)} MB
@@ -64,9 +64,10 @@ export function FileUploadBox({
 
           <button
             type="button"
+            aria-label={`Видалити файл ${file.name}`}
             disabled={disabled}
             onClick={() => onFileChange(null)}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full hover:bg-slate-100"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-slate-100"
           >
             <FiX className="size-4" />
           </button>
@@ -83,7 +84,7 @@ export function FileUploadBox({
             type="button"
             disabled={disabled}
             onClick={() => inputRef.current?.click()}
-            className="mt-3 text-sm font-semibold text-[var(--color-accent)] hover:underline"
+            className="mt-3 min-h-11 rounded-md px-3 text-sm font-semibold text-[var(--color-accent)] hover:underline"
           >
             Обрати файл
           </button>

@@ -25,14 +25,14 @@ export function ProjectPublicDocuments() {
       {publicDocuments.map((document) => (
         <div
           key={document.id}
-          className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-4"
+          className="flex min-w-0 flex-col items-stretch justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-4 sm:flex-row sm:items-center"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-slate-100 text-[var(--color-text-secondary)]">
               <FiFileText className="size-4" />
             </div>
 
-            <span className="font-semibold">{document.name}</span>
+            <span className="break-words font-semibold">{document.name}</span>
           </div>
 
           <Badge

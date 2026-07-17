@@ -39,18 +39,18 @@ export function ArchiveDetailView({
         <FiArrowLeft className="size-4" /> Архів
       </Link>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{project.name}</h1>
+      <div className="flex min-w-0 flex-col items-stretch justify-between gap-4 sm:flex-row sm:flex-wrap sm:items-start">
+        <div className="min-w-0">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <h1 className="break-words text-xl font-bold sm:text-2xl">{project.name}</h1>
             <Badge variant={project.status === "ARCHIVED" ? "warning" : "default"}>
               {project.status === "ARCHIVED" ? "Архівний проєкт" : "Активний проєкт"}
             </Badge>
           </div>
-          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{project.address} · {project.customer}</p>
+          <p className="mt-2 break-words text-sm text-[var(--color-text-secondary)]">{project.address} · {project.customer}</p>
         </div>
         {canManage && project.status === "ARCHIVED" && restoreProjectAction ? (
-          <Button type="button" onClick={() => setRestoreProjectOpen(true)}>Відновити проєкт</Button>
+          <Button type="button" onClick={() => setRestoreProjectOpen(true)} className="w-full sm:w-auto">Відновити проєкт</Button>
         ) : null}
       </div>
 
@@ -71,9 +71,9 @@ export function ArchiveDetailView({
           <p className="p-5 text-sm text-[var(--color-text-secondary)]">Архівних документів немає.</p>
         ) : project.documents.map((document) => (
           <div key={document.id} className="flex flex-col justify-between gap-4 border-b border-slate-100 px-5 py-4 last:border-0 md:flex-row md:items-start">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{document.name}</span>
+            <div className="min-w-0">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="break-words font-semibold">{document.name}</span>
                 <Badge variant={document.status === "ARCHIVED" ? "warning" : "default"}>{document.status}</Badge>
               </div>
               <div className="mt-2 text-xs text-[var(--color-text-muted)]">

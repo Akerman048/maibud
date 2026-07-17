@@ -43,12 +43,12 @@ export function ReturnRemarkModal({
           />
         </div>
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="secondary" onClick={onClose}>
+        <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
+          <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto">
             Скасувати
           </Button>
 
-          <Button type="submit" className="bg-red-600 hover:bg-red-700">
+          <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 sm:w-auto">
             Повернути
           </Button>
         </div>

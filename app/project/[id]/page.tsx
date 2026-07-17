@@ -27,7 +27,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-background)] p-5 sm:p-8">
+    <main className="min-h-screen bg-[var(--color-background)] p-4 sm:p-8">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <div className="flex items-center gap-2.5">
           <div className="flex size-7 items-center justify-center rounded-[7px] bg-[var(--color-accent)] text-sm font-bold text-white">
@@ -42,11 +42,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             Статус експертизи вашого проєкту
           </div>
 
-          <h1 className="text-3xl font-bold tracking-[-0.01em]">
+          <h1 className="break-words text-2xl font-bold tracking-[-0.01em] sm:text-3xl">
             {project.name}
           </h1>
 
-          <p className="mt-1 text-[var(--color-text-secondary)]">
+          <p className="mt-1 break-words text-[var(--color-text-secondary)]">
             {project.address}
           </p>
         </div>
@@ -55,11 +55,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           <ProjectStepper currentStep={3} />
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <ProjectInfoGrid project={project} />
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <h2 className="mb-5 text-lg font-semibold">Останні оновлення</h2>
 
           {auditLogs.length === 0 ? (
@@ -90,7 +90,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           )}
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <h2 className="mb-5 text-lg font-semibold">Документи</h2>
           <ProjectPublicDocuments />
         </Card>

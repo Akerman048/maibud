@@ -26,10 +26,10 @@ export function SearchInput({ defaultValue = "", label = "Пошук" }: { defau
   }, [pathname, queryString, router, value]);
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex w-full min-w-0 items-center gap-2">
       <label htmlFor="list-search" className="sr-only">{label}</label>
       <Input id="list-search" type="search" maxLength={200} value={value} onChange={(event) => setValue(event.target.value)} placeholder={`${label}…`} className="min-w-0 flex-1" />
-      {value && <button type="button" onClick={() => setValue("")} className="text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-accent)]">Очистити</button>}
+      {value && <button type="button" onClick={() => setValue("")} aria-label={`Очистити поле: ${label}`} className="min-h-11 shrink-0 rounded-md px-2 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-accent)]">Очистити</button>}
     </div>
   );
 }

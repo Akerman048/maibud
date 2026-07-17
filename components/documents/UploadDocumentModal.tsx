@@ -170,17 +170,18 @@ export function UploadDocumentModal({
           <p className="text-sm font-medium text-red-600">{errorMessage}</p>
         )}
 
-        <div className="mt-2 flex justify-end gap-3">
+        <div className="mt-2 flex flex-col-reverse justify-end gap-3 sm:flex-row">
           <Button
             type="button"
             variant="secondary"
             onClick={onClose}
             disabled={isPending}
+            className="w-full sm:w-auto"
           >
             Скасувати
           </Button>
 
-          <Button type="submit" disabled={isPending || !file}>
+          <Button type="submit" disabled={isPending || !file} className="w-full sm:w-auto">
             {isPending ? "Завантаження..." : "Завантажити"}
           </Button>
         </div>
