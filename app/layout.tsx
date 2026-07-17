@@ -16,6 +16,16 @@ export const metadata: Metadata = {
   },
   description: BRAND_DESCRIPTION,
   applicationName: BRAND_NAME,
+  icons: {
+    icon: [
+      {
+        url: "/favicon.ico?v=2",
+        type: "image/x-icon",
+        sizes: "256x256",
+      },
+    ],
+    shortcut: "/favicon.ico?v=2",
+  },
   openGraph: {
     title: BRAND_NAME,
     description: BRAND_DESCRIPTION,
