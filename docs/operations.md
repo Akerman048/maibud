@@ -20,7 +20,9 @@ If readiness fails while health succeeds, treat PostgreSQL reachability, TLS/cer
 
 ## Rate-limit review
 
-No limiter is introduced in this change. Before public production exposure, select an infrastructure-backed limiter that works across instances and define trusted proxy/IP handling. Recommended policies:
+Public organization registration has a process-local limit of 5 requests per 15 minutes per client IP. Client IP headers are read only on the supported Render and Vercel deployments. This limit is suitable for one instance only: before scaling horizontally, replace its in-memory store with an infrastructure-backed limiter shared by every instance.
+
+Recommended policies for the remaining endpoints:
 
 | Endpoint | Suggested key | Starting policy | Notes |
 | --- | --- | --- | --- |
