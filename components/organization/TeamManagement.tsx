@@ -494,12 +494,14 @@ export function TeamManagement({
                   </div>
                 </div>
               </div>
-              <MemberActions
-                member={member}
-                organizationId={organizationId}
-                currentUserId={currentUserId}
-                projects={projects}
-              />
+              {member.isActive && !member.removedAt && (
+                <MemberActions
+                  member={member}
+                  organizationId={organizationId}
+                  currentUserId={currentUserId}
+                  projects={projects}
+                />
+              )}
             </Card>
           ))}
           <Pagination pagination={memberPagination} />

@@ -56,7 +56,7 @@ export async function NotificationsPageContent({
           {firstQueryValue(searchParams.actorId) && <input type="hidden" name="actorId" value={firstQueryValue(searchParams.actorId)} />}
           <label className="sr-only" htmlFor="notification-type">Тип</label><Select id="notification-type" name="type" defaultValue={query.type ?? ""} options={[{ value: "", label: "Усі типи" }, ...Object.values(NotificationType).map((type) => ({ value: type, label: type.replaceAll("_", " ") }))]} />
           <label className="sr-only" htmlFor="notification-project">Проєкт</label><Select id="notification-project" name="projectId" defaultValue={query.projectId ?? ""} options={[{ value: "", label: "Усі проєкти" }, ...projects.map((project) => ({ value: project.id, label: project.name }))]} />
-          <DateRangeFilter from={firstQueryValue(searchParams.createdFrom)} to={firstQueryValue(searchParams.createdTo)} label="Створено" />
+          <DateRangeFilter from={firstQueryValue(searchParams.createdFrom)} to={firstQueryValue(searchParams.createdTo)} label="Дата створення" />
           <Button type="submit">Застосувати</Button><Button asChild type="button" variant="secondary"><Link href={basePath}>Очистити фільтри</Link></Button>
         </FilterBar></form>
         <div className="flex justify-end"><PageSizeSelect value={query.pageSize} /></div>

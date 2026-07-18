@@ -14,12 +14,14 @@ const mocks = vi.hoisted(() => ({
   projectMemberUpsert: vi.fn(),
   userFindFirst: vi.fn(),
   userFindUnique: vi.fn(),
+  userCreate: vi.fn(),
   userUpdate: vi.fn(),
   auditCreate: vi.fn(),
   auditCreateMany: vi.fn(),
   createNotification: vi.fn(),
   cancelPendingInvitationEmailJobs: vi.fn(),
   createInvitationEmailJob: vi.fn(),
+  queryRaw: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -42,6 +44,7 @@ import {
   acceptOrganizationInvitation,
   createOrganizationInvitation,
   inspectOrganizationInvitation,
+  registerAndAcceptOrganizationInvitation,
   revokeOrganizationInvitation,
   rotateOrganizationInvitation,
 } from "@/lib/invitation-service";
@@ -61,7 +64,7 @@ const pendingInvitation = {
   status: "PENDING",
   acceptedAt: null,
   revokedAt: null,
-  expiresAt: new Date("2026-07-18T12:00:00.000Z"),
+  expiresAt: new Date("2027-07-18T12:00:00.000Z"),
   organizationId: "organization-1",
   projectId: null,
   invitedById: "head-1",
@@ -69,6 +72,7 @@ const pendingInvitation = {
 
 function transactionClient() {
   return {
+    $queryRaw: mocks.queryRaw,
     invitation: {
       findUnique: mocks.invitationFindUnique,
       findFirst: mocks.invitationFindFirst,
@@ -83,7 +87,12 @@ function transactionClient() {
     organization: { findUnique: mocks.organizationFindUnique },
     project: { findFirst: mocks.projectFindFirst },
     projectMember: { upsert: mocks.projectMemberUpsert },
-    user: { findUnique: mocks.userFindUnique, update: mocks.userUpdate },
+    user: {
+      findFirst: mocks.userFindFirst,
+      findUnique: mocks.userFindUnique,
+      create: mocks.userCreate,
+      update: mocks.userUpdate,
+    },
     auditLog: {
       create: mocks.auditCreate,
       createMany: mocks.auditCreateMany,
@@ -107,7 +116,8 @@ describe("secure invitation service", () => {
     });
     mocks.organizationMemberUpsert.mockResolvedValue({ id: "membership-1" });
     mocks.organizationFindUnique.mockResolvedValue({ name: "Secure Organization" });
-    mocks.userFindFirst.mockResolvedValue({ id: "expert-1" });
+    mocks.userFindFirst.mockResolvedValue({ id: "expert-1", isActive: true });
+    mocks.userCreate.mockResolvedValue({ id: "expert-1" });
     mocks.projectMemberUpsert.mockResolvedValue({ id: "project-membership-1" });
     mocks.userFindUnique.mockResolvedValue({
       id: "expert-1",
@@ -222,7 +232,7 @@ describe("secure invitation service", () => {
       organizationName: "Secure Organization",
       role: "EXPERT",
       email: "ex••••@example.com",
-      expiresAt: "2026-07-18T12:00:00.000Z",
+      expiresAt: "2027-07-18T12:00:00.000Z",
       projectName: null,
       viewerStatus: "unauthenticated-existing",
     });
@@ -267,6 +277,25 @@ describe("secure invitation service", () => {
     ).resolves.toMatchObject({ viewerStatus: "authenticated-wrong" });
   });
 
+  it("does not present an inactive existing account as a new Google registration", async () => {
+    mocks.invitationFindUnique.mockResolvedValue({
+      ...pendingInvitation,
+      organization: { name: "Org" },
+      project: null,
+    });
+    mocks.userFindFirst.mockResolvedValue({
+      id: "inactive-user",
+      isActive: false,
+    });
+
+    await expect(
+      inspectOrganizationInvitation("a".repeat(43)),
+    ).resolves.toMatchObject({
+      status: "valid",
+      viewerStatus: "inactive-existing",
+    });
+  });
+
   it.each([
     [null, "invalid"],
     [{ ...pendingInvitation, status: "ACCEPTED", acceptedAt: now }, "accepted"],
@@ -298,13 +327,63 @@ describe("secure invitation service", () => {
         }),
       }),
     );
-    expect(mocks.organizationMemberUpsert).toHaveBeenCalledTimes(1);
+    expect(mocks.organizationMemberUpsert).toHaveBeenCalledWith({
+      where: {
+        organizationId_userId: {
+          organizationId: "organization-1",
+          userId: "expert-1",
+        },
+      },
+      create: {
+        organizationId: "organization-1",
+        userId: "expert-1",
+        role: "EXPERT",
+      },
+      update: {
+        role: "EXPERT",
+        removedAt: null,
+        joinedAt: now,
+      },
+      select: { id: true },
+    });
     expect(mocks.auditCreateMany).toHaveBeenCalledTimes(1);
     expect(mocks.createNotification).toHaveBeenCalledTimes(1);
     expect(mocks.cancelPendingInvitationEmailJobs).toHaveBeenCalledWith(
       expect.anything(),
       "invitation-1",
     );
+  });
+
+  it("creates a credentials user and accepts without creating an organization in one transaction", async () => {
+    mocks.invitationFindUnique.mockResolvedValue(pendingInvitation);
+    mocks.userFindFirst.mockResolvedValue(null);
+
+    const result = await registerAndAcceptOrganizationInvitation({
+      token: "a".repeat(43),
+      name: " Invited Expert ",
+      password: "Secure123",
+      confirmPassword: "Secure123",
+      now,
+    });
+
+    expect(result).toMatchObject({
+      userId: "expert-1",
+      email: "expert@example.com",
+      dashboardPath: "/dashboard/expert",
+    });
+    expect(mocks.transaction).toHaveBeenCalledTimes(1);
+    expect(mocks.userCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        name: "Invited Expert",
+        email: "expert@example.com",
+        role: "EXPERT",
+        passwordHash: expect.any(String),
+      }),
+      select: { id: true },
+    });
+    expect(mocks.invitationUpdateMany).toHaveBeenCalledTimes(1);
+    expect(mocks.organizationMemberUpsert).toHaveBeenCalledTimes(1);
+    expect(mocks.organizationFindUnique).not.toHaveBeenCalled();
   });
 
   it("rejects acceptance by a different normalized email before claiming", async () => {
@@ -321,6 +400,37 @@ describe("secure invitation service", () => {
       acceptOrganizationInvitation({ token: "a".repeat(43), userId: "other-user", now }),
     ).rejects.toMatchObject({ code: "EMAIL_MISMATCH" });
     expect(mocks.invitationUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("creates the scoped project membership when the invitation names a project", async () => {
+    mocks.invitationFindUnique.mockResolvedValue({
+      ...pendingInvitation,
+      projectId: "project-1",
+    });
+    mocks.projectFindFirst.mockResolvedValue({ id: "project-1" });
+
+    await acceptOrganizationInvitation({
+      token: "a".repeat(43),
+      userId: "expert-1",
+      now,
+    });
+
+    expect(mocks.projectFindFirst).toHaveBeenCalledWith({
+      where: {
+        id: "project-1",
+        organizationId: "organization-1",
+        status: { not: "ARCHIVED" },
+      },
+      select: { id: true },
+    });
+    expect(mocks.projectMemberUpsert).toHaveBeenCalledWith({
+      where: {
+        userId_projectId: { userId: "expert-1", projectId: "project-1" },
+      },
+      create: { userId: "expert-1", projectId: "project-1", role: "EXPERT" },
+      update: { role: "EXPERT" },
+      select: { id: true },
+    });
   });
 
   it("rejects an unknown token and an inactive account", async () => {
@@ -417,6 +527,76 @@ describe("secure invitation service", () => {
     expect(mocks.userUpdate).toHaveBeenCalledWith({
       where: { id: "expert-1" },
       data: { role: "EXPERT" },
+    });
+  });
+
+  it("re-invites an active removed user and restores role and project membership", async () => {
+    mocks.invitationFindUnique.mockResolvedValue({
+      ...pendingInvitation,
+      role: "ARCHIVIST",
+      projectId: "project-1",
+    });
+    mocks.userFindUnique.mockResolvedValue({
+      id: "expert-1",
+      email: "expert@example.com",
+      name: "User",
+      role: "EXPERT",
+      isActive: true,
+      organizationMemberships: [],
+    });
+    mocks.organizationMemberFindUnique.mockResolvedValue({
+      id: "membership-removed",
+      role: "EXPERT",
+      removedAt: new Date("2026-07-16T12:00:00.000Z"),
+    });
+    mocks.projectFindFirst.mockResolvedValue({ id: "project-1" });
+
+    const result = await acceptOrganizationInvitation({
+      token: "a".repeat(43),
+      userId: "expert-1",
+      now,
+    });
+
+    expect(result).toMatchObject({
+      role: "ARCHIVIST",
+      roleChanged: true,
+      membershipAlreadyActive: false,
+      dashboardPath: "/dashboard/archivist",
+    });
+    expect(mocks.userUpdate).toHaveBeenCalledWith({
+      where: { id: "expert-1" },
+      data: { role: "ARCHIVIST" },
+    });
+    expect(mocks.organizationMemberUpsert).toHaveBeenCalledWith({
+      where: {
+        organizationId_userId: {
+          organizationId: "organization-1",
+          userId: "expert-1",
+        },
+      },
+      create: {
+        organizationId: "organization-1",
+        userId: "expert-1",
+        role: "ARCHIVIST",
+      },
+      update: {
+        role: "ARCHIVIST",
+        removedAt: null,
+        joinedAt: now,
+      },
+      select: { id: true },
+    });
+    expect(mocks.projectMemberUpsert).toHaveBeenCalledWith({
+      where: {
+        userId_projectId: { userId: "expert-1", projectId: "project-1" },
+      },
+      create: {
+        userId: "expert-1",
+        projectId: "project-1",
+        role: "ARCHIVIST",
+      },
+      update: { role: "ARCHIVIST" },
+      select: { id: true },
     });
   });
 

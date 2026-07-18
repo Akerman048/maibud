@@ -4,6 +4,7 @@ import {
 } from "@/app/generated/prisma/client";
 import type { Project, ProjectStatus } from "@/types/project";
 import { prisma } from "@/lib/prisma";
+import { getActiveOrganizationMembershipWhere } from "@/lib/organization-membership";
 
 function mapProjectStatus(status: string): ProjectStatus {
   if (status === "OPEN") return "open";
@@ -31,6 +32,7 @@ function mapProject(project: {
   members: {
     role: UserRole;
     user: {
+      id: string;
       name: string;
     };
   }[];
@@ -46,6 +48,7 @@ function mapProject(project: {
     customer: project.customer,
     stage: project.stage,
     expert: expertMember?.user.name ?? "Не призначено",
+    expertId: expertMember?.user.id ?? null,
     deadline: project.deadline
       ? project.deadline.toLocaleDateString("uk-UA")
       : "—",
@@ -56,6 +59,55 @@ function mapProject(project: {
     restoredAt: project.restoredAt?.toISOString() ?? null,
     restoredByName: project.restoredBy?.name ?? null,
   };
+}
+
+export const BUSY_EXPERT_PROJECT_THRESHOLD = 4;
+
+export async function getOrganizationExperts(organizationId: string) {
+  const memberships = await prisma.organizationMember.findMany({
+    where: {
+      ...getActiveOrganizationMembershipWhere({
+        organizationId,
+        role: UserRole.EXPERT,
+      }),
+    },
+    select: {
+      id: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          memberships: {
+            where: {
+              role: UserRole.EXPERT,
+              project: {
+                organizationId,
+                status: {
+                  notIn: [
+                    PrismaProjectStatus.ARCHIVED,
+                    PrismaProjectStatus.COMPLETED,
+                  ],
+                },
+              },
+            },
+            select: { projectId: true },
+          },
+        },
+      },
+    },
+    orderBy: { user: { name: "asc" } },
+  });
+
+  return memberships.map(({ user }) => ({
+    id: user.id,
+    name: user.name,
+    activeProjects: user.memberships.length,
+    // Four concurrent active projects is the documented busy threshold.
+    status:
+      user.memberships.length >= BUSY_EXPERT_PROJECT_THRESHOLD
+        ? ("busy" as const)
+        : ("active" as const),
+  }));
 }
 
 export async function getProjectById(id: string): Promise<Project | null> {

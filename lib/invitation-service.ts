@@ -19,16 +19,23 @@ import {
 } from "@/lib/email/email-jobs";
 import {
   createInvitationInputSchema,
+  invitationEmailSchema,
+  invitationRegistrationSchema,
   invitationRoleSchema,
   invitationTokenSchema,
   type InvitationRole,
 } from "@/lib/invitation-validation";
-import { getNotificationHref } from "@/lib/notification-policy";
+import {
+  getDashboardHref,
+  getNotificationHref,
+} from "@/lib/notification-policy";
 import { canApplyInvitationRole } from "@/lib/membership-policy";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { hashPassword } from "@/lib/password";
 
 export type InvitationLifecycleErrorCode =
+  | "ACCOUNT_EXISTS"
   | "ACCEPTED"
   | "ACTIVE_MEMBER"
   | "EMAIL_MISMATCH"
@@ -267,18 +274,19 @@ export async function inspectOrganizationInvitation(
   const account = await prisma.user.findFirst({
     where: {
       email: { equals: invitation.email, mode: "insensitive" },
-      isActive: true,
     },
-    select: { id: true },
+    select: { id: true, isActive: true },
   });
   const viewerStatus = viewerEmail
     ? normalizeInvitationEmail(viewerEmail) ===
       normalizeInvitationEmail(invitation.email)
       ? ("authenticated-matching" as const)
       : ("authenticated-wrong" as const)
-    : account
-      ? ("unauthenticated-existing" as const)
-      : ("unauthenticated-new" as const);
+    : !account
+      ? ("unauthenticated-new" as const)
+      : account.isActive
+        ? ("unauthenticated-existing" as const)
+        : ("inactive-existing" as const);
 
   return {
     status: "valid" as const,
@@ -291,23 +299,23 @@ export async function inspectOrganizationInvitation(
   };
 }
 
-export async function acceptOrganizationInvitation({
-  token,
+async function acceptOrganizationInvitationInTransaction({
+  tx,
+  tokenHash,
   userId,
-  now = new Date(),
+  now,
 }: {
-  token: string;
+  tx: Prisma.TransactionClient;
+  tokenHash: string;
   userId: string;
-  now?: Date;
+  now: Date;
 }) {
-  const parsedToken = invitationTokenSchema.safeParse(token);
-  if (!parsedToken.success) {
-    throw new InvitationLifecycleError("INVALID", "Запрошення недійсне.");
-  }
-  const tokenHash = hashInvitationToken(parsedToken.data);
-
-  return prisma.$transaction(
-    async (tx) => {
+      await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT "id"
+        FROM "Invitation"
+        WHERE "tokenHash" = ${tokenHash}
+        FOR UPDATE
+      `);
       const invitation = await tx.invitation.findUnique({
         where: { tokenHash },
         select: {
@@ -541,10 +549,99 @@ export async function acceptOrganizationInvitation({
       return {
         organizationId: invitation.organizationId,
         role: parsedRole.data,
-        dashboardPath: "/dashboard",
+        dashboardPath: getDashboardHref(parsedRole.data),
         membershipAlreadyActive: !membershipChanged,
         roleChanged,
       };
+}
+
+export async function acceptOrganizationInvitation({
+  token,
+  userId,
+  now = new Date(),
+}: {
+  token: string;
+  userId: string;
+  now?: Date;
+}) {
+  const parsedToken = invitationTokenSchema.safeParse(token);
+  if (!parsedToken.success) {
+    throw new InvitationLifecycleError("INVALID", "Запрошення недійсне.");
+  }
+  const tokenHash = hashInvitationToken(parsedToken.data);
+
+  return prisma.$transaction(
+    (tx) =>
+      acceptOrganizationInvitationInTransaction({ tx, tokenHash, userId, now }),
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+export async function registerAndAcceptOrganizationInvitation(input: {
+  token: string;
+  name: string;
+  password: string;
+  confirmPassword: string;
+  now?: Date;
+}) {
+  const parsed = invitationRegistrationSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new InvitationLifecycleError(
+      "INVALID",
+      parsed.error.issues[0]?.message ?? "Перевірте введені дані.",
+    );
+  }
+
+  const now = input.now ?? new Date();
+  const tokenHash = hashInvitationToken(parsed.data.token);
+  const passwordHash = await hashPassword(parsed.data.password);
+
+  return prisma.$transaction(
+    async (tx) => {
+      await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT "id"
+        FROM "Invitation"
+        WHERE "tokenHash" = ${tokenHash}
+        FOR UPDATE
+      `);
+      const invitation = await tx.invitation.findUnique({
+        where: { tokenHash },
+        select: { email: true, role: true },
+      });
+      const email = invitationEmailSchema.safeParse(invitation?.email);
+      const role = invitationRoleSchema.safeParse(invitation?.role);
+      if (!invitation || !email.success || !role.success) {
+        throw new InvitationLifecycleError("INVALID", "Запрошення недійсне.");
+      }
+
+      const existingUser = await tx.user.findFirst({
+        where: { email: { equals: email.data, mode: "insensitive" } },
+        select: { id: true },
+      });
+      if (existingUser) {
+        throw new InvitationLifecycleError(
+          "ACCOUNT_EXISTS",
+          "Обліковий запис уже існує. Увійдіть, щоб прийняти запрошення.",
+        );
+      }
+
+      const user = await tx.user.create({
+        data: {
+          name: parsed.data.name,
+          email: email.data,
+          passwordHash,
+          role: role.data,
+        },
+        select: { id: true },
+      });
+
+      const accepted = await acceptOrganizationInvitationInTransaction({
+        tx,
+        tokenHash,
+        userId: user.id,
+        now,
+      });
+      return { ...accepted, userId: user.id, email: email.data };
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );

@@ -16,6 +16,8 @@ import { SidebarNavItem } from "./SidebarNavItem";
 type SidebarNavProps = {
   role: DashboardRole;
   unreadNotificationCount: number;
+  openCommentThreadCount: number;
+  archiveCount: number;
   onNavigate?: () => void;
 };
 
@@ -39,7 +41,6 @@ const navByRole = {
       label: "Зауваження",
       href: "/dashboard/expert/comments",
       icon: FiMessageSquare,
-      badge: 6,
     },
     { label: "Документи", href: "/dashboard/expert/documents", icon: FiFileText },
     { label: "Сповіщення", href: "/dashboard/expert/notifications", icon: FiBell },
@@ -52,7 +53,6 @@ const navByRole = {
       label: "Зауваження",
       href: "/dashboard/designer/comments",
       icon: FiMessageSquare,
-      badge: 8,
     },
     { label: "Документи", href: "/dashboard/designer/documents", icon: FiFileText },
     { label: "Сповіщення", href: "/dashboard/designer/notifications", icon: FiBell },
@@ -60,7 +60,6 @@ const navByRole = {
       label: "Архів",
       href: "/dashboard/designer/archive",
       icon: FiArchive,
-      badge: 6,
     },
     { label: "Налаштування", href: "/dashboard/designer/settings", icon: FiSettings },
   ],
@@ -83,7 +82,13 @@ const navByRole = {
   ],
 };
 
-export function SidebarNav({ role, unreadNotificationCount, onNavigate }: SidebarNavProps) {
+export function SidebarNav({
+  role,
+  unreadNotificationCount,
+  openCommentThreadCount,
+  archiveCount,
+  onNavigate,
+}: SidebarNavProps) {
   const navItems = navByRole[role];
 
   return (
@@ -102,8 +107,18 @@ export function SidebarNav({ role, unreadNotificationCount, onNavigate }: Sideba
                   ? "99+"
                   : unreadNotificationCount
                 : undefined
-              : "badge" in item
-                ? item.badge
+              : item.label === "Зауваження"
+                ? openCommentThreadCount > 0
+                  ? openCommentThreadCount > 99
+                    ? "99+"
+                    : openCommentThreadCount
+                  : undefined
+              : item.label === "Архів"
+                ? archiveCount > 0
+                  ? archiveCount > 99
+                    ? "99+"
+                    : archiveCount
+                  : undefined
                 : undefined
           }
         />

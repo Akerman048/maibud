@@ -13,6 +13,7 @@ export type Project = {
   customer: string;
   stage: string;
   expert: string;
+  expertId: string | null;
   deadline: string;
   status: ProjectStatus;
   archivedAt?: string | null;

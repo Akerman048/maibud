@@ -1,19 +1,24 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 import { Prisma } from "@/app/generated/prisma/client";
-import { AuthorizationError, requireUser } from "@/lib/auth-guard";
+import { AuthorizationError, requireAuthenticatedUser } from "@/lib/auth-guard";
 import {
   acceptOrganizationInvitation,
   InvitationLifecycleError,
+  registerAndAcceptOrganizationInvitation,
 } from "@/lib/invitation-service";
 import { checkInvitationRateLimit } from "@/lib/invitation-rate-limit";
-import { invitationTokenSchema } from "@/lib/invitation-validation";
+import {
+  getInvitationCallbackPath,
+  invitationTokenSchema,
+} from "@/lib/invitation-validation";
 import { getTrustedClientIp } from "@/lib/process-rate-limit";
 import type { AcceptInvitationState } from "@/types/invitation-action";
-import { signOut } from "@/auth";
+import { signIn, signOut, updateSession } from "@/auth";
+import { INVITATION_INTENT_COOKIE } from "@/lib/invitation-intent";
 
 function acceptanceError(error: unknown): AcceptInvitationState {
   if (error instanceof InvitationLifecycleError) {
@@ -49,7 +54,6 @@ export async function acceptInvitation(
   formData: FormData,
 ): Promise<AcceptInvitationState> {
   let dashboardPath = "/dashboard";
-  let roleChanged = false;
 
   try {
     const clientIp = getTrustedClientIp(await headers());
@@ -66,20 +70,66 @@ export async function acceptInvitation(
       return { error: "Запрошення недійсне.", success: false };
     }
 
-    const user = await requireUser();
+    const user = await requireAuthenticatedUser();
     const result = await acceptOrganizationInvitation({
       token: tokenResult.data,
       userId: user.id,
     });
     dashboardPath = result.dashboardPath;
-    roleChanged = result.roleChanged;
+    (await cookies()).delete(INVITATION_INTENT_COOKIE);
+    await updateSession({});
   } catch (error) {
     return acceptanceError(error);
   }
 
-  if (roleChanged) {
-    await signOut({ redirectTo: "/login?invitationAccepted=1" });
+  redirect(dashboardPath);
+}
+
+export async function signOutFromInvitation(formData: FormData) {
+  const token = invitationTokenSchema.safeParse(formData.get("token"));
+  const redirectTo = token.success
+    ? getInvitationCallbackPath(token.data) ?? "/login"
+    : "/login";
+
+  await signOut({ redirectTo });
+}
+
+export async function registerInvitationAccount(
+  _previousState: AcceptInvitationState,
+  formData: FormData,
+): Promise<AcceptInvitationState> {
+  let password = "";
+  let result: Awaited<
+    ReturnType<typeof registerAndAcceptOrganizationInvitation>
+  >;
+  try {
+    const clientIp = getTrustedClientIp(await headers());
+    const rateLimit = checkInvitationRateLimit("accept", clientIp);
+    if (!rateLimit.allowed) {
+      return {
+        error: `Забагато спроб. Повторіть через ${rateLimit.retryAfterSeconds} с.`,
+        success: false,
+      };
+    }
+
+    password = String(formData.get("password") ?? "");
+    result = await registerAndAcceptOrganizationInvitation({
+      token: String(formData.get("token") ?? ""),
+      name: String(formData.get("name") ?? ""),
+      password,
+      confirmPassword: String(formData.get("confirmPassword") ?? ""),
+    });
+  } catch (error) {
+    return acceptanceError(error);
   }
 
-  redirect(dashboardPath);
+  // A fresh credentials sign-in builds the JWT from the role and membership
+  // committed by the serializable invitation transaction.
+  (await cookies()).delete(INVITATION_INTENT_COOKIE);
+  await signIn("credentials", {
+    email: result.email,
+    password,
+    redirectTo: result.dashboardPath,
+  });
+  return { error: "", success: true };
 }

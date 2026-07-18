@@ -10,6 +10,8 @@ import type { UserRole } from "@/app/generated/prisma/client";
 type MobileSidebarProps = {
   role: DashboardRole;
   unreadNotificationCount: number;
+  openCommentThreadCount: number;
+  archiveCount: number;
   user: {
     name?: string | null;
     email?: string | null;
@@ -21,6 +23,8 @@ export function MobileSidebar({
   role,
   user,
   unreadNotificationCount,
+  openCommentThreadCount,
+  archiveCount,
 }: MobileSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -115,6 +119,8 @@ export function MobileSidebar({
               mobile
               onNavigate={closeMenu}
               unreadNotificationCount={unreadNotificationCount}
+              openCommentThreadCount={openCommentThreadCount}
+              archiveCount={archiveCount}
             />
           </div>
         </div>

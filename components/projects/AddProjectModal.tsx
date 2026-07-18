@@ -43,7 +43,7 @@ export function AddProjectModal({
   }
 
   const expertOptions = [
-    { label: "Оберіть експерта", value: "" },
+    { label: "Призначити пізніше", value: "" },
     ...(experts ?? []).map((expert) => ({
       label: expert.name,
       value: expert.id,
@@ -101,7 +101,6 @@ export function AddProjectModal({
               name="expert"
               options={expertOptions}
               defaultValue=""
-              required
             />
           </div>
         </div>

@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 import { Card } from "@/components/ui/Card";
+import { getVisibleActivity } from "@/lib/activity-feed-visibility";
 import type { ActivityFeedItem } from "@/types/dashboard";
 
 const formatter = new Intl.DateTimeFormat("uk-UA", {
@@ -34,6 +38,10 @@ function ActivityContent({ item }: { item: ActivityFeedItem }) {
 }
 
 export function ActivityFeed({ activity }: { activity: ActivityFeedItem[] }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const visibleActivity = getVisibleActivity(activity, isExpanded);
+  const canToggle = activity.length > 3;
+
   return (
     <section aria-labelledby="activity-feed-title">
       <h2 id="activity-feed-title" className="mb-3 text-lg font-semibold text-[var(--color-text-primary)]">
@@ -45,8 +53,8 @@ export function ActivityFeed({ activity }: { activity: ActivityFeedItem[] }) {
             За обраний період активності немає.
           </p>
         ) : (
-          <ul>
-            {activity.map((item) => (
+          <ul id="activity-feed-list">
+            {visibleActivity.map((item) => (
               <li key={item.id} className="border-b border-[var(--color-border)] last:border-b-0">
                 {item.href ? (
                   <Link
@@ -63,6 +71,19 @@ export function ActivityFeed({ activity }: { activity: ActivityFeedItem[] }) {
             ))}
           </ul>
         )}
+        {canToggle ? (
+          <div className="flex justify-center border-t border-[var(--color-border)] p-3">
+            <button
+              type="button"
+              aria-controls="activity-feed-list"
+              aria-expanded={isExpanded}
+              onClick={() => setIsExpanded((value) => !value)}
+              className="min-h-10 rounded-[var(--radius-md)] px-4 text-sm font-semibold text-[var(--color-accent)] transition hover:bg-[var(--color-accent-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            >
+              {isExpanded ? "Згорнути" : `Показати всі (${activity.length})`}
+            </button>
+          </div>
+        ) : null}
       </Card>
     </section>
   );

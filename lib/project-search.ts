@@ -150,7 +150,7 @@ const select = {
   members: {
     where: { role: UserRole.EXPERT },
     take: 1,
-    select: { user: { select: { name: true } } },
+    select: { user: { select: { id: true, name: true } } },
   },
 } satisfies Prisma.ProjectSelect;
 
@@ -194,6 +194,7 @@ export async function searchProjects(params: ProjectSearchParams): Promise<Pagin
         customer: project.customer,
         stage: "",
         expert: "—",
+        expertId: null,
         deadline: project.deadline?.toLocaleDateString("uk-UA") ?? "—",
         status: mapStatus(project.status),
       })),
@@ -224,6 +225,7 @@ export async function searchProjects(params: ProjectSearchParams): Promise<Pagin
       customer: project.customer,
       stage: project.stage,
       expert: project.members[0]?.user.name ?? "Не призначено",
+      expertId: project.members[0]?.user.id ?? null,
       deadline: project.deadline?.toLocaleDateString("uk-UA") ?? "—",
       status: mapStatus(project.status),
       archivedAt: project.archivedAt?.toISOString() ?? null,

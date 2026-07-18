@@ -5,6 +5,7 @@ import { requireHeadOfOrganization } from "@/lib/organization-access";
 import { prisma } from "@/lib/prisma";
 import { getPaginationMeta } from "@/lib/query-params";
 import type { PaginatedResult, SortDirection } from "@/types/query";
+import { getActiveOrganizationMembershipWhere } from "@/lib/organization-membership";
 
 export type MemberSearchParams = {
   organizationId: string;
@@ -20,9 +21,12 @@ export type MemberSearchParams = {
 
 export function buildMemberWhere(params: MemberSearchParams): Prisma.OrganizationMemberWhereInput {
   return {
-    organizationId: params.organizationId,
+    ...(params.active === true
+      ? getActiveOrganizationMembershipWhere({
+          organizationId: params.organizationId,
+        })
+      : { organizationId: params.organizationId }),
     AND: [
-      ...(params.active === true ? [{ removedAt: null, user: { isActive: true } }] : []),
       ...(params.active === false ? [{ OR: [{ removedAt: { not: null } }, { user: { isActive: false } }] }] : []),
       ...(params.role ? [{ role: params.role }] : []),
       ...(params.projectId ? [{ user: { memberships: { some: { projectId: params.projectId } } } }] : []),

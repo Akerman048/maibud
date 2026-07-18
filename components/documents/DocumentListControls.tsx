@@ -18,7 +18,7 @@ export function DocumentListControls({ query, basePath, projects, authors = [], 
     {authors.length > 0 && <><label className="sr-only" htmlFor="document-author">Автор</label><Select id="document-author" name="authorId" defaultValue={query.authorId ?? ""} options={[{ value: "", label: "Усі автори" }, ...authors.map((user) => ({ value: user.id, label: user.name }))]} /></>}
     {reviewers.length > 0 && <><label className="sr-only" htmlFor="document-reviewer">Рецензент</label><Select id="document-reviewer" name="reviewerId" defaultValue={query.reviewerId ?? ""} options={[{ value: "", label: "Усі рецензенти" }, ...reviewers.map((user) => ({ value: user.id, label: user.name }))]} /></>}
     <label className="sr-only" htmlFor="document-published">Публікація</label><Select id="document-published" name="published" defaultValue={query.published ?? "all"} options={[{ value: "all", label: "Будь-яка публікація" }, { value: "true", label: "Опубліковано клієнту" }, { value: "false", label: "Не опубліковано" }]} />
-    <DateRangeFilter from={query.createdFrom} to={query.createdTo} label="Створено" />
+    <DateRangeFilter from={query.createdFrom} to={query.createdTo} label="Дата створення" />
     <SortSelect value={query.sortBy ?? "createdAt"} direction={query.sortDirection} options={[{ value: "createdAt", label: "За створенням" }, { value: "updatedAt", label: "За оновленням" }, { value: "title", label: "За назвою" }, { value: "status", label: "За статусом" }, { value: "reviewedAt", label: "За перевіркою" }]} />
     <Button type="submit">Застосувати</Button><Button asChild type="button" variant="secondary"><Link href={basePath}>Очистити фільтри</Link></Button>
   </FilterBar></form></div>;

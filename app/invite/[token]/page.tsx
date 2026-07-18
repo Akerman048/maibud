@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { AcceptInvitationForm } from "@/components/organization/AcceptInvitationForm";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -9,6 +9,10 @@ import { getTrustedClientIp } from "@/lib/process-rate-limit";
 import { getUserRoleLabel } from "@/lib/user-role";
 import { BRAND_NAME } from "@/lib/brand";
 import { getInvitationCallbackPath } from "@/lib/invitation-validation";
+import {
+  INVITATION_INTENT_COOKIE,
+  parseInvitationIntentPath,
+} from "@/lib/invitation-intent";
 
 function InvitationMessage({
   title,
@@ -53,6 +57,9 @@ export default async function InvitationPage({
     session?.user?.email,
   );
   const callbackPath = getInvitationCallbackPath(token);
+  const invitationIntent = parseInvitationIntentPath(
+    (await cookies()).get(INVITATION_INTENT_COOKIE)?.value,
+  );
   const loginHref = callbackPath
     ? `/login?callbackUrl=${encodeURIComponent(callbackPath)}`
     : "/login";
@@ -134,6 +141,10 @@ export default async function InvitationPage({
           email={invitation.email}
           viewerStatus={invitation.viewerStatus}
           loginHref={loginHref}
+          autoAccept={
+            invitation.viewerStatus === "authenticated-matching" &&
+            invitationIntent === callbackPath
+          }
         />
       </Card>
     </main>
