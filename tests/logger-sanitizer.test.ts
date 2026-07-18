@@ -47,4 +47,21 @@ describe("structured logger sanitizer", () => {
     expect(() => JSON.stringify(record)).not.toThrow();
     expect(new Date(record.timestamp).toISOString()).toBe(record.timestamp);
   });
+
+  it("redacts OAuth fields and invitation paths embedded in strings", () => {
+    const record = createLogRecord("error", "authentication failed", {
+      reason:
+        "code=oauth-code state=oauth-state access_token=access-secret " +
+        "refresh_token=refresh-secret id_token=id-secret " +
+        "/invite/abcdefghijklmnopqrstuvwxyz1234567890ABCDEFG",
+    });
+    const output = JSON.stringify(record);
+
+    expect(output).not.toContain("oauth-code");
+    expect(output).not.toContain("oauth-state");
+    expect(output).not.toContain("access-secret");
+    expect(output).not.toContain("refresh-secret");
+    expect(output).not.toContain("id-secret");
+    expect(output).not.toContain("abcdefghijklmnopqrstuvwxyz1234567890ABCDEFG");
+  });
 });

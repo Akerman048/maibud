@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   inspectGoogleSignIn: vi.fn(),
   logDebug: vi.fn(),
+  logError: vi.fn(),
   authSession: vi.fn(),
 }));
 
@@ -36,7 +37,7 @@ vi.mock("@/lib/logger", () => ({
     debug: mocks.logDebug,
     info: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn(),
+    error: mocks.logError,
   },
 }));
 vi.mock("@/lib/prisma", () => ({
@@ -148,6 +149,54 @@ describe("Auth.js Google JWT/session integration", () => {
     expect(JSON.stringify(mocks.logDebug.mock.calls)).not.toContain(
       "must-not-be-logged",
     );
+  });
+
+  it("logs stable Auth.js types and sanitized nested adapter causes", () => {
+    const authLogger = mocks.config.logger as {
+      error(error: unknown): void;
+    };
+    const nestedError = new Error(
+      "relation Account does not exist for person@example.com; " +
+        "DATABASE_URL=postgresql://admin:password@database/internal " +
+        "access_token=google-secret",
+    );
+    authLogger.error({
+      type: "AdapterError",
+      name: "f",
+      message: "Adapter failed with state=oauth-state",
+      cause: { err: nestedError },
+      details: {
+        provider: "google",
+        method: "getUserByAccount",
+        code: "oauth-code",
+        invitationToken: "raw-invitation-token",
+      },
+    });
+
+    expect(mocks.logError).toHaveBeenCalledWith(
+      "Auth.js authentication error",
+      expect.objectContaining({
+        errorType: "AdapterError",
+        errorName: "f",
+        errorMessage: "Adapter failed with state=[REDACTED]",
+        causeErrorName: "Error",
+        causeErrorMessage: expect.stringContaining("relation Account does not exist"),
+        provider: "google",
+        details: {
+          provider: "google",
+          method: "getUserByAccount",
+          code: "[REDACTED]",
+          invitationToken: "[REDACTED]",
+        },
+      }),
+    );
+    const output = JSON.stringify(mocks.logError.mock.calls);
+    expect(output).not.toContain("person@example.com");
+    expect(output).not.toContain("admin:password");
+    expect(output).not.toContain("google-secret");
+    expect(output).not.toContain("oauth-state");
+    expect(output).not.toContain("oauth-code");
+    expect(output).not.toContain("raw-invitation-token");
   });
 
   it("hydrates role and onboarding only from trusted application data", async () => {

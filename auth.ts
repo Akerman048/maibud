@@ -9,6 +9,7 @@ import {
   inspectGoogleSignIn,
 } from "@/lib/google-oauth";
 import { logger } from "@/lib/logger";
+import { normalizeAuthErrorForLogging } from "@/lib/error-normalization";
 import { verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 
@@ -37,7 +38,7 @@ export const { handlers, auth, signIn, signOut, unstable_update: updateSession }
   logger: {
     error(error) {
       logger.error("Auth.js authentication error", {
-        errorType: error.name,
+        ...normalizeAuthErrorForLogging(error),
       });
     },
     warn(code) {

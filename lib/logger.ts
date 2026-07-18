@@ -5,7 +5,7 @@ const MAX_OBJECT_KEYS = 50;
 const MAX_STRING_LENGTH = 500;
 
 const SENSITIVE_KEY_PATTERN =
-  /(authorization|cookie|password|passwd|secret|token|apikey|api_key|session|jwt|objectkey|presigned|uploadurl|downloadurl|databaseurl|connectionstring|payload|comment|rejectionreason|content)/i;
+  /(authorization|cookie|password|passwd|secret|token|apikey|api_key|session|jwt|objectkey|presigned|uploadurl|downloadurl|database.?url|connection.?string|payload|comment|rejectionreason|content)/i;
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 export type LogContext = Record<string, unknown>;
@@ -15,6 +15,11 @@ function sanitizeString(value: string) {
     .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, "[REDACTED_EMAIL]")
     .replace(/Bearer\s+[^\s]+/gi, "Bearer [REDACTED]")
     .replace(/postgres(?:ql)?:\/\/[^\s]+/gi, "[REDACTED_DATABASE_URL]")
+    .replace(
+      /\b(access_token|refresh_token|id_token|code|state|signature|invitation(?:_|-)?token)\b(\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,&}]+)/gi,
+      "$1$2[REDACTED]",
+    )
+    .replace(/\/invite\/[A-Za-z0-9_-]{16,}/gi, "/invite/[REDACTED]")
     .replace(/https?:\/\/[^\s?]+\?[^\s]+/gi, "[REDACTED_SIGNED_URL]")
     .replace(/organizations\/[A-Za-z0-9/_.,+() -]+/gi, "[REDACTED_OBJECT_KEY]")
     .replace(/\b[^\s/\\]+\.(?:pdf|docx?|xlsx?|dwg|png|jpe?g)\b/gi, "[REDACTED_FILENAME]");
