@@ -5,9 +5,8 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Header } from "@/components/layout/Header";
 import { AddProjectButton } from "@/components/projects/AddProjectButton";
 import { ProjectsView } from "@/components/projects/ProjectsView";
-import { getDesigners, getExperts } from "@/lib/projects";
-import { UserRole } from "@/app/generated/prisma/client";
-import { requireRole } from "@/lib/auth-guard";
+import { getDesigners, getOrganizationExperts } from "@/lib/projects";
+import { requireCurrentHeadOrganization } from "@/lib/organization-access";
 import { normalizeProjectSearchParams, searchProjects } from "@/lib/project-search";
 import { ProjectListControls } from "@/components/projects/ProjectListControls";
 import { PageSizeSelect } from "@/components/search/PageSizeSelect";
@@ -19,10 +18,18 @@ import { getHeadDashboardData } from "@/lib/dashboard/head-dashboard";
 import { parseDashboardDateRange } from "@/lib/dashboard-date-range";
 
 export default async function HeadPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const [currentUser, raw] = await Promise.all([requireRole([UserRole.HEAD]), searchParams]);
+  const [{ user: currentUser, organization }, raw] = await Promise.all([
+    requireCurrentHeadOrganization(),
+    searchParams,
+  ]);
   const query = normalizeProjectSearchParams(raw, currentUser.id, currentUser.role);
   const range = parseDashboardDateRange(raw.range);
-  const [result, experts, designers, dashboard] = await Promise.all([searchProjects(query), getExperts(currentUser.id), getDesigners(currentUser.id), getHeadDashboardData(currentUser.id, range)]);
+  const [result, experts, designers, dashboard] = await Promise.all([
+    searchProjects(query),
+    getOrganizationExperts(organization.id),
+    getDesigners(currentUser.id),
+    getHeadDashboardData(currentUser.id, range),
+  ]);
 
   return (
     <DashboardLayout>

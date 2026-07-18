@@ -2,6 +2,7 @@ import { Prisma, UserRole } from "@/app/generated/prisma/client";
 import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import type { RegistrationInput } from "@/lib/registration-validation";
+import { hashInvitationToken } from "@/lib/invitations";
 
 export class RegistrationEmailConflictError extends Error {
   constructor() {
@@ -91,4 +92,103 @@ export async function registerOrganization(input: RegistrationInput) {
 
     throw error;
   }
+}
+
+export class GoogleOnboardingError extends Error {
+  constructor(
+    message:
+      | "Active membership exists"
+      | "Google account required"
+      | "Inactive user"
+      | "Invitation flow required"
+      | "Invalid onboarding role"
+      | "User not found",
+  ) {
+    super(message);
+    this.name = "GoogleOnboardingError";
+  }
+}
+
+export async function completeGoogleOrganizationRegistration({
+  userId,
+  organizationName,
+  invitationToken,
+}: {
+  userId: string;
+  organizationName: string;
+  invitationToken?: string;
+}) {
+  return prisma.$transaction(
+    async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          isActive: true,
+          passwordHash: true,
+          role: true,
+          accounts: {
+            where: { provider: "google" },
+            select: { id: true },
+            take: 1,
+          },
+          organizationMemberships: {
+            where: { removedAt: null },
+            select: { organizationId: true },
+            take: 1,
+          },
+        },
+      });
+
+      if (!user) throw new GoogleOnboardingError("User not found");
+      if (!user.isActive) throw new GoogleOnboardingError("Inactive user");
+      if (invitationToken) {
+        const invitation = await tx.invitation.findUnique({
+          where: { tokenHash: hashInvitationToken(invitationToken) },
+          select: { id: true },
+        });
+        if (invitation) {
+          throw new GoogleOnboardingError("Invitation flow required");
+        }
+      }
+      if (!user.accounts.length) {
+        throw new GoogleOnboardingError("Google account required");
+      }
+      if (user.organizationMemberships.length) {
+        throw new GoogleOnboardingError("Active membership exists");
+      }
+      if (user.role !== UserRole.DESIGNER || user.passwordHash !== null) {
+        throw new GoogleOnboardingError("Invalid onboarding role");
+      }
+
+      const organization = await tx.organization.create({
+        data: { name: organizationName },
+        select: { id: true },
+      });
+
+      await tx.organizationMember.create({
+        data: {
+          organizationId: organization.id,
+          userId,
+          role: UserRole.HEAD,
+        },
+      });
+      await tx.user.update({
+        where: { id: userId },
+        data: { role: UserRole.HEAD },
+      });
+      await tx.auditLog.create({
+        data: {
+          action: "Завершено реєстрацію через Google",
+          entityType: "Organization",
+          entityId: organization.id,
+          userId,
+        },
+      });
+
+      return { organizationId: organization.id, created: true };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
 }

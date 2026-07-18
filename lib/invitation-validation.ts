@@ -60,4 +60,26 @@ export const invitationMutationSchema = z.object({
   invitationId: invitationIdSchema,
 });
 
+export const invitationRegistrationSchema = z
+  .object({
+    token: invitationTokenSchema,
+    name: z
+      .string({ error: "Ім’я обов’язкове." })
+      .trim()
+      .min(1, "Ім’я обов’язкове.")
+      .max(200, "Ім’я не може перевищувати 200 символів."),
+    password: z
+      .string({ error: "Пароль обов’язковий." })
+      .min(8, "Пароль повинен містити щонайменше 8 символів.")
+      .max(128, "Пароль не може перевищувати 128 символів.")
+      .regex(/[A-Z]/, "Пароль повинен містити велику літеру.")
+      .regex(/[a-z]/, "Пароль повинен містити малу літеру.")
+      .regex(/[0-9]/, "Пароль повинен містити цифру."),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Паролі не збігаються.",
+    path: ["confirmPassword"],
+  });
+
 export type InvitationRole = z.infer<typeof invitationRoleSchema>;

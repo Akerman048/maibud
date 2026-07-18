@@ -307,6 +307,15 @@ export async function getArchiveProjects(
   };
 }
 
+export async function getArchiveProjectCount(
+  currentUserId: string,
+  role: UserRole,
+): Promise<number> {
+  return prisma.project.count({
+    where: getArchiveWhere(currentUserId, role, {}),
+  });
+}
+
 export async function getArchiveProjectById(
   id: string,
   currentUserId: string,

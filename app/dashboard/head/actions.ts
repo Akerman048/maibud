@@ -4,11 +4,12 @@
 import { revalidatePath } from "next/cache";
 
 import { ProjectStatus, UserRole } from "@/app/generated/prisma/client";
-import { requireRole } from "@/lib/auth-guard";
+import { requireCurrentHeadOrganization } from "@/lib/organization-access";
 import { prisma } from "@/lib/prisma";
 
 export async function createProject(formData: FormData) {
-  const currentUser = await requireRole([UserRole.HEAD]);
+  const { user: currentUser, organization } =
+    await requireCurrentHeadOrganization();
 
   const name = String(formData.get("name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
@@ -17,7 +18,7 @@ export async function createProject(formData: FormData) {
   const expertId = String(formData.get("expert") ?? "").trim();
   const deadlineValue = String(formData.get("deadline") ?? "").trim();
 
-  if (!name || !address || !customer || !stage || !expertId || !deadlineValue) {
+  if (!name || !address || !customer || !stage || !deadlineValue) {
     throw new Error("Заповніть усі поля");
   }
 
@@ -27,24 +28,37 @@ export async function createProject(formData: FormData) {
     throw new Error("Некоректна дата завершення");
   }
 
-  const organization = await prisma.organization.findFirst();
-
-  if (!organization) {
-    throw new Error("Organization not found");
-  }
-
-  const expert = await prisma.user.findFirst({
-    where: {
-      id: expertId,
-      role: UserRole.EXPERT,
-    },
-  });
-
-  if (!expert) {
-    throw new Error("Expert not found");
-  }
-
   await prisma.$transaction(async (tx) => {
+    const headMembership = await tx.organizationMember.findFirst({
+      where: {
+        organizationId: organization.id,
+        userId: currentUser.id,
+        role: UserRole.HEAD,
+        removedAt: null,
+        user: { isActive: true },
+      },
+      select: { id: true },
+    });
+    if (!headMembership) throw new Error("Organization access lost");
+
+    const expert = expertId
+      ? await tx.user.findFirst({
+          where: {
+            id: expertId,
+            isActive: true,
+            organizationMemberships: {
+              some: {
+                organizationId: organization.id,
+                role: UserRole.EXPERT,
+                removedAt: null,
+              },
+            },
+          },
+          select: { id: true },
+        })
+      : null;
+    if (expertId && !expert) throw new Error("Expert not found in organization");
+
     const createdProject = await tx.project.create({
       data: {
         name,
@@ -60,10 +74,9 @@ export async function createProject(formData: FormData) {
               userId: currentUser.id,
               role: UserRole.HEAD,
             },
-            {
-              userId: expert.id,
-              role: UserRole.EXPERT,
-            },
+            ...(expert
+              ? [{ userId: expert.id, role: UserRole.EXPERT }]
+              : []),
           ],
         },
       },
@@ -86,7 +99,8 @@ export async function createProject(formData: FormData) {
 }
 
 export async function updateProject(formData: FormData) {
-  const currentUser = await requireRole([UserRole.HEAD]);
+  const { user: currentUser, organization } =
+    await requireCurrentHeadOrganization();
 
   const id = String(formData.get("id") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
@@ -102,7 +116,6 @@ export async function updateProject(formData: FormData) {
     !address ||
     !customer ||
     !stage ||
-    !expertId ||
     !deadlineValue
   ) {
     throw new Error("Заповніть усі поля");
@@ -114,20 +127,10 @@ export async function updateProject(formData: FormData) {
     throw new Error("Некоректна дата завершення");
   }
 
-  const expert = await prisma.user.findFirst({
-    where: {
-      id: expertId,
-      role: UserRole.EXPERT,
-    },
-  });
-
-  if (!expert) {
-    throw new Error("Expert not found");
-  }
-
   const project = await prisma.project.findFirst({
     where: {
       id,
+      organizationId: organization.id,
       members: {
         some: {
           userId: currentUser.id,
@@ -156,9 +159,28 @@ export async function updateProject(formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
+    const expert = expertId
+      ? await tx.user.findFirst({
+          where: {
+            id: expertId,
+            isActive: true,
+            organizationMemberships: {
+              some: {
+                organizationId: organization.id,
+                role: UserRole.EXPERT,
+                removedAt: null,
+              },
+            },
+          },
+          select: { id: true },
+        })
+      : null;
+    if (expertId && !expert) throw new Error("Expert not found in organization");
+
     const updateResult = await tx.project.updateMany({
       where: {
         id,
+        organizationId: organization.id,
         status: { not: ProjectStatus.ARCHIVED },
         members: { some: { userId: currentUser.id, role: UserRole.HEAD } },
         organization: {
@@ -192,13 +214,15 @@ export async function updateProject(formData: FormData) {
       },
     });
 
-    await tx.projectMember.create({
-      data: {
-        projectId: id,
-        userId: expert.id,
-        role: UserRole.EXPERT,
-      },
-    });
+    if (expert) {
+      await tx.projectMember.create({
+        data: {
+          projectId: id,
+          userId: expert.id,
+          role: UserRole.EXPERT,
+        },
+      });
+    }
 
     await tx.auditLog.create({
       data: {

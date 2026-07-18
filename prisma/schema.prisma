@@ -93,13 +93,14 @@ enum EmailTemplate {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String?
-  role         UserRole  @default(DESIGNER)
-  isActive     Boolean   @default(true)
-  disabledAt   DateTime?
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String?
+  role          UserRole  @default(DESIGNER)
+  isActive      Boolean   @default(true)
+  disabledAt    DateTime?
+  emailVerified DateTime?
 
   emailNotificationsEnabled Boolean @default(true)
   emailDocumentUpdates      Boolean @default(true)
@@ -126,9 +127,26 @@ model User {
   notifications           Notification[]       @relation("UserNotifications")
   actedNotifications      Notification[]       @relation("ActorNotifications")
   auditLogs               AuditLog[]
+  accounts                Account[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Organization {

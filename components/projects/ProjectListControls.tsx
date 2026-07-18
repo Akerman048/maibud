@@ -23,7 +23,7 @@ export function ProjectListControls({ query, basePath, showInternalFilters = tru
         <Input id="project-customer" name="customer" defaultValue={query.customer} placeholder="Замовник" />
         {experts.length > 0 && <><label className="sr-only" htmlFor="project-expert">Експерт</label><Select id="project-expert" name="expertId" defaultValue={query.expertId ?? ""} options={[{ value: "", label: "Усі експерти" }, ...experts.map((user) => ({ value: user.id, label: user.name }))]} /></>}
         {designers.length > 0 && <><label className="sr-only" htmlFor="project-designer">Проєктувальник</label><Select id="project-designer" name="designerId" defaultValue={query.designerId ?? ""} options={[{ value: "", label: "Усі проєктувальники" }, ...designers.map((user) => ({ value: user.id, label: user.name }))]} /></>}
-        <DateRangeFilter from={query.createdFrom} to={query.createdTo} label="Створено" />
+        <DateRangeFilter from={query.createdFrom} to={query.createdTo} label="Дата створення" />
         <DateRangeFilter fromName="deadlineFrom" toName="deadlineTo" from={query.deadlineFrom} to={query.deadlineTo} label="Дедлайн" />
       </>}
       <SortSelect value={query.sortBy ?? "createdAt"} direction={query.sortDirection} options={[{ value: "createdAt", label: "За датою створення" }, { value: "updatedAt", label: "За оновленням" }, { value: "deadline", label: "За дедлайном" }, { value: "name", label: "За назвою" }, { value: "status", label: "За статусом" }]} />

@@ -60,6 +60,25 @@ The `pg` concurrent-query warning was traced to `Promise.all` calls on a Prisma 
 
 Deployment and incident procedures, including rollback, log fields and the rate-limit review, are documented in [docs/operations.md](docs/operations.md).
 
+## Resetting a development test user
+
+The reset command is intentionally disabled unless the environment is not
+production and the explicit safety switch is enabled. Always inspect a dry run
+first:
+
+```bash
+ALLOW_DEV_DATABASE_RESET=true pnpm run dev:reset-user -- user@example.com --dry-run
+ALLOW_DEV_DATABASE_RESET=true pnpm run dev:reset-user -- user@example.com
+```
+
+The command normalizes the email and prints its deletion plan before making any
+changes. Account, project/organization membership, user-owned notification,
+invitation, and safe reference cleanup runs in one serializable transaction.
+It never deletes shared projects or documents. An onboarding organization is
+removed only when the target was its sole HEAD member and it has no projects or
+remaining invitations. The reset refuses to continue when deleting the User
+could cascade into documents or violate shared authored-content relations.
+
 ## Organization invitations
 
 HEAD creates an invitation and assigns its organization role; invitees cannot choose a role themselves. Invitation links contain a one-time raw token, while the `Invitation` row stores only its SHA-256 hash. The raw link is queued through the existing short-lived invitation email job during create/resend, and the generated URL is still shown to HEAD as a manual-delivery fallback.

@@ -36,20 +36,31 @@ export function withApiObservability<TRequest extends Request, TContext>(
       );
     }
 
-    response.headers.set(REQUEST_ID_HEADER, requestId);
+    const responseHeaders = new Headers(response.headers);
+    responseHeaders.set(REQUEST_ID_HEADER, requestId);
+    const observedResponse = new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: responseHeaders,
+    });
     const durationMs = Math.round((performance.now() - startedAt) * 100) / 100;
     const contextFields = {
       requestId,
       route,
       method: request.method,
-      status: response.status,
+      status: observedResponse.status,
       durationMs,
     };
-    if (response.status >= 500) logger.error("API request completed", contextFields);
-    else if (response.status >= 400) logger.warn("API request completed", contextFields);
+    if (observedResponse.status >= 500) logger.error("API request completed", contextFields);
+    else if (observedResponse.status >= 400) logger.warn("API request completed", contextFields);
     else logger.info("API request completed", contextFields);
-    metrics.httpRequest(route, request.method, response.status, durationMs);
-    return response;
+    metrics.httpRequest(
+      route,
+      request.method,
+      observedResponse.status,
+      durationMs,
+    );
+    return observedResponse;
   };
 }
 

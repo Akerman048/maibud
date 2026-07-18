@@ -1,12 +1,28 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { auth } from "@/auth";
+import {
+  INVITATION_INTENT_COOKIE,
+  parseInvitationIntentPath,
+} from "@/lib/invitation-intent";
 
 export default async function DashboardPage() {
   const session = await auth();
 
   if (!session?.user) {
     redirect("/login");
+  }
+
+  const invitationIntent = parseInvitationIntentPath(
+    (await cookies()).get(INVITATION_INTENT_COOKIE)?.value,
+  );
+  if (invitationIntent) {
+    redirect(invitationIntent);
+  }
+
+  if (session.user.onboardingRequired) {
+    redirect("/onboarding");
   }
 
   if (session.user.role === "HEAD") {

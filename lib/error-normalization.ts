@@ -7,15 +7,18 @@ export type NormalizedError = {
   stack?: string;
 };
 
-function safeString(value: unknown, fallback: string) {
+function safeString(value: unknown, fallback: string, maximum = 500) {
   if (typeof value !== "string" || !value.trim()) return fallback;
   return value
     .replace(/postgres(?:ql)?:\/\/[^\s]+/gi, "[REDACTED_DATABASE_URL]")
     .replace(/Bearer\s+[^\s]+/gi, "Bearer [REDACTED]")
-    .replace(/([?&](?:X-Amz-[^=]+|token|secret|signature)=)[^&\s]+/gi, "$1[REDACTED]")
+    .replace(
+      /([?&](?:X-Amz-[^=]+|token|secret|signature|code|state|id_token|access_token|refresh_token)=)[^&\s]+/gi,
+      "$1[REDACTED]",
+    )
     .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, "[REDACTED_EMAIL]")
     .replace(/\b[^\s/\\]+\.(?:pdf|docx?|xlsx?|dwg|png|jpe?g)\b/gi, "[REDACTED_FILENAME]")
-    .slice(0, 500);
+    .slice(0, maximum);
 }
 
 function readString(record: Record<string, unknown>, key: string) {
@@ -68,7 +71,7 @@ export function normalizeErrorForLogging(
     }
   }
   if (environment !== "production" && error instanceof Error && error.stack) {
-    normalized.stack = error.stack.slice(0, 2_000);
+    normalized.stack = safeString(error.stack, "Error", 2_000);
   }
   return normalized;
 }

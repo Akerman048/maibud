@@ -35,6 +35,7 @@ import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { getTrustedClientIp } from "@/lib/process-rate-limit";
 import type { OrganizationActionState } from "@/types/organization";
+import { getActiveOrganizationMembershipWhere } from "@/lib/organization-membership";
 
 class OrganizationActionError extends Error {}
 
@@ -295,24 +296,6 @@ export async function removeOrganizationMember(
           },
         });
 
-        const remainingMemberships =
-          await tx.organizationMember.count({
-            where: {
-              userId: target.userId,
-              removedAt: null,
-            },
-          });
-
-        if (remainingMemberships === 0) {
-          await tx.user.update({
-            where: { id: target.userId },
-            data: {
-              isActive: false,
-              disabledAt: new Date(),
-            },
-          });
-        }
-
         await tx.auditLog.create({
           data: {
             action: "Користувача видалено з організації",
@@ -357,10 +340,10 @@ export async function addMemberToProject(
     await prisma.$transaction(async (tx) => {
       const member = await tx.organizationMember.findFirst({
           where: {
-            id: input.organizationMemberId,
-            organizationId: input.organizationId,
-            removedAt: null,
-            user: { isActive: true },
+            ...getActiveOrganizationMembershipWhere({
+              organizationId: input.organizationId,
+              membershipId: input.organizationMemberId,
+            }),
           },
           select: { userId: true, role: true },
         });
@@ -560,9 +543,10 @@ export async function updateOrganizationMemberRole(
       async (tx) => {
         const target = await tx.organizationMember.findFirst({
           where: {
-            id: input.organizationMemberId,
-            organizationId: input.organizationId,
-            removedAt: null,
+            ...getActiveOrganizationMembershipWhere({
+              organizationId: input.organizationId,
+              membershipId: input.organizationMemberId,
+            }),
           },
           select: {
             id: true,

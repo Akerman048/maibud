@@ -39,7 +39,9 @@ export default async function HeadMembersPage({ searchParams }: { searchParams: 
 
   const value = (key: string) => firstQueryValue(raw[key]);
   const rawRole = value("role");
-  const active = normalizeBooleanFilter(value("active"));
+  const active = value("active")
+    ? normalizeBooleanFilter(value("active"))
+    : "true";
   const sortBy = value("sortBy");
   const normalizedSortBy: "name" | "role" | "createdAt" =
     sortBy === "name" || sortBy === "role" ? sortBy : "createdAt";

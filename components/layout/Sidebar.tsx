@@ -17,6 +17,8 @@ export type DashboardRole =
 type SidebarProps = {
   role: DashboardRole;
   unreadNotificationCount: number;
+  openCommentThreadCount: number;
+  archiveCount: number;
   mobile?: boolean;
   onNavigate?: () => void;
   user: {
@@ -55,6 +57,8 @@ export function Sidebar({
   role,
   user,
   unreadNotificationCount,
+  openCommentThreadCount,
+  archiveCount,
   mobile = false,
   onNavigate,
 }: SidebarProps) {
@@ -83,6 +87,8 @@ export function Sidebar({
       <SidebarNav
         role={role}
         unreadNotificationCount={unreadNotificationCount}
+        openCommentThreadCount={openCommentThreadCount}
+        archiveCount={archiveCount}
         onNavigate={onNavigate}
       />
 

@@ -5,17 +5,31 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { Card } from "@/components/ui/Card";
+import { getSafeInvitationCallbackPath } from "@/lib/invitation-validation";
 
 export const metadata: Metadata = {
   title: "Створення організації",
 };
 
-export default async function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
   const session = await auth();
+  const query = await searchParams;
+  const callbackUrl = getSafeInvitationCallbackPath(query.callbackUrl);
 
   if (session?.user) {
-    redirect("/dashboard");
+    redirect(
+      callbackUrl !== "/dashboard"
+        ? callbackUrl
+        : session.user.onboardingRequired
+          ? "/onboarding"
+          : "/dashboard",
+    );
   }
 
   return (
@@ -41,10 +55,18 @@ export default async function RegisterPage() {
         </div>
 
         <RegisterForm />
+        <GoogleSignInButton callbackUrl={callbackUrl} />
 
         <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
           Уже маєте обліковий запис?{" "}
-          <Link href="/login" className="font-semibold text-[var(--color-accent)] hover:underline">
+          <Link
+            href={
+              callbackUrl === "/dashboard"
+                ? "/login"
+                : `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+            }
+            className="font-semibold text-[var(--color-accent)] hover:underline"
+          >
             Увійти
           </Link>
         </p>

@@ -8,6 +8,7 @@ This guide covers deployment configuration only. Database migrations, seed scrip
 - Copy `.env.example` to a secret store or `.env.production`; never commit the populated file.
 - Set `AUTH_URL` and `APP_URL` to the exact canonical HTTPS origin, without a trailing path. Set `AUTH_TRUST_HOST=true` only behind the trusted Render or Vercel proxy.
 - Generate independent, random values of at least 32 characters for `AUTH_SECRET` and `EMAIL_JOB_SECRET`.
+- Google authentication is enabled only when both `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` are set. Leaving both absent intentionally disables the provider; setting only one fails startup clearly. These values are server-only and must never use a `NEXT_PUBLIC_` prefix.
 - Public `NEXT_PUBLIC_*` values are embedded at build time. All other secrets must be runtime variables.
 - `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are build-only values for source-map upload. Do not pass the token as a Docker build argument because build arguments can be retained in image metadata or cache.
 
@@ -39,6 +40,24 @@ docker run --rm --env-file .env.production -p 3000:3000 maibud:production
 
 For Render, deploy the repository as a Docker web service, expose port `3000`, set the health-check path to `/api/health`, and store runtime variables in the service environment. Use a pre-deploy command only after reviewing pending migrations; never run `prisma migrate dev` in production. Keep at least one previous immutable image available for rollback.
 
+### Google Cloud OAuth client
+
+Create a Web application OAuth client in Google Cloud and configure only the authentication scopes `openid`, `email`, and `profile`. Gmail API scopes and offline access are not used. Add these exact entries:
+
+Authorized JavaScript origins:
+
+- `http://localhost:3000`
+- `https://maibud.onrender.com`
+
+Authorized redirect URIs:
+
+- `http://localhost:3000/api/auth/callback/google`
+- `https://maibud.onrender.com/api/auth/callback/google`
+
+The callback path comes from this repository's Auth.js catch-all route at `app/api/auth/[...nextauth]/route.ts`. Store the client ID as `AUTH_GOOGLE_ID` and the client secret as `AUTH_GOOGLE_SECRET`. Never commit either value.
+
+New Google users are created in a deliberately incomplete state and redirected to `/onboarding`, where they must provide the real organization name and accept the terms. Organization, `HEAD` membership, trusted global role, and audit log are then created in one serializable transaction. Until that completes, dashboard guards redirect the user back to onboarding. For Google only, an existing active credentials user is linked automatically when Google returns the same normalized, valid, verified email. The link stores only Google provider identity; passwords, roles, memberships, preferences, and provider tokens are not changed or persisted. Missing, malformed, unverified, mismatched, or inactive-user profiles are rejected.
+
 ## 3. Vercel
 
 Import the repository as a Next.js project and use the repository's Node/pnpm versions. Configure separate Preview and Production environments. Production `AUTH_URL` and `APP_URL` must use the production domain; previews need their own callback origin and should not share production credentials or the production S3 write policy.
@@ -56,6 +75,69 @@ DATABASE_URL="<reviewed-direct-neon-url>" pnpm exec prisma migrate deploy
 ```
 
 This command is documentation only; it is intentionally absent from build, startup, Docker, and CI.
+
+### Evidence-based repair for users disabled by membership removal
+
+Older application code globally disabled a user when their final organization membership was removed. Do not reactivate all inactive users: `isActive = false` may also represent an intentional administrative decision. Repair only a specific email after confirming all of the following in the database:
+
+- the user is inactive and has `disabledAt` set;
+- the user has no active `OrganizationMember` rows;
+- at least one membership has `removedAt` set;
+- an AuditLog entry named `Користувача видалено з організації` references that membership within 60 seconds of `disabledAt`.
+
+Use a reviewed database console and one transaction. Replace the placeholder with exactly one normalized email, run the `SELECT` first, and continue only when it identifies the intended user:
+
+```sql
+BEGIN;
+
+SELECT
+  u."id",
+  u."isActive",
+  u."disabledAt",
+  m."removedAt",
+  a."createdAt" AS "removalAuditAt"
+FROM "User" u
+JOIN "OrganizationMember" m ON m."userId" = u."id"
+JOIN "AuditLog" a ON a."entityId" = m."id"
+WHERE lower(u."email") = lower('user@example.com')
+  AND u."isActive" = false
+  AND u."disabledAt" IS NOT NULL
+  AND m."removedAt" IS NOT NULL
+  AND a."action" = 'Користувача видалено з організації'
+  AND abs(extract(epoch FROM (a."createdAt" - u."disabledAt"))) <= 60;
+
+UPDATE "User" u
+SET
+  "isActive" = true,
+  "disabledAt" = NULL,
+  "updatedAt" = CURRENT_TIMESTAMP
+WHERE lower(u."email") = lower('user@example.com')
+  AND u."isActive" = false
+  AND u."disabledAt" IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1
+    FROM "OrganizationMember" active_membership
+    WHERE active_membership."userId" = u."id"
+      AND active_membership."removedAt" IS NULL
+  )
+  AND EXISTS (
+    SELECT 1
+    FROM "OrganizationMember" removed_membership
+    JOIN "AuditLog" removal_audit
+      ON removal_audit."entityId" = removed_membership."id"
+    WHERE removed_membership."userId" = u."id"
+      AND removed_membership."removedAt" IS NOT NULL
+      AND removal_audit."action" = 'Користувача видалено з організації'
+      AND abs(extract(epoch FROM (removal_audit."createdAt" - u."disabledAt"))) <= 60
+  )
+RETURNING u."id", u."isActive", u."disabledAt";
+
+-- COMMIT only when UPDATE returned exactly one reviewed user.
+-- Otherwise use ROLLBACK and investigate.
+COMMIT;
+```
+
+This repair changes only global account availability. It does not restore memberships, roles, projects, or invitations; a new validated invitation must do that through the normal acceptance transaction.
 
 ## 5. AWS S3
 

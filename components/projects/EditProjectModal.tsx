@@ -44,10 +44,10 @@ export function EditProjectModal({
     });
   }
 
-  const expertOptions = experts.map((expert) => ({
-    label: expert.name,
-    value: expert.id,
-  }));
+  const expertOptions = [
+    { label: "Призначити пізніше", value: "" },
+    ...experts.map((expert) => ({ label: expert.name, value: expert.id })),
+  ];
 
   return (
     <Modal
@@ -89,8 +89,7 @@ export function EditProjectModal({
             <Select
               name="expert"
               options={expertOptions}
-              defaultValue={experts[0]?.id ?? ""}
-              required
+              defaultValue={project.expertId ?? ""}
             />
           </div>
         </div>

@@ -117,6 +117,28 @@ function getAccessWhere(
   };
 }
 
+export function getOpenCommentThreadCount(
+  currentUserId: string,
+  role: UserRole,
+) {
+  if (role !== UserRole.EXPERT && role !== UserRole.DESIGNER) {
+    return Promise.resolve(0);
+  }
+
+  return prisma.commentThread.count({
+    where: {
+      AND: [
+        getAccessWhere(currentUserId, role),
+        {
+          status: {
+            in: [CommentThreadStatus.OPEN, CommentThreadStatus.RETURNED],
+          },
+        },
+      ],
+    },
+  });
+}
+
 function mapCommentThread(
   thread: CommentThreadRecord,
   currentUserId: string,
