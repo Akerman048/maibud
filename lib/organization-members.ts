@@ -3,30 +3,16 @@ import "server-only";
 import { InvitationStatus, Prisma } from "@/app/generated/prisma/client";
 
 import { isInvitationExpired } from "@/lib/invitations";
-import { requireHeadOfOrganization } from "@/lib/organization-access";
+import {
+  findCurrentHeadOrganizationMembership,
+  requireHeadOfOrganization,
+} from "@/lib/organization-access";
 import { prisma } from "@/lib/prisma";
 import { getPaginationMeta } from "@/lib/query-params";
 
 export async function getCurrentHeadOrganization(userId: string) {
-  return prisma.organization.findFirst({
-    where: {
-      members: {
-        some: {
-          userId,
-          role: "HEAD",
-          removedAt: null,
-          user: { isActive: true },
-        },
-      },
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-    orderBy: {
-      createdAt: "asc",
-    },
-  });
+  const membership = await findCurrentHeadOrganizationMembership(userId);
+  return membership?.organization ?? null;
 }
 
 export async function getPendingInvitations(organizationId: string, page = 1, pageSize = 20) {

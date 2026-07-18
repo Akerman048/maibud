@@ -3,6 +3,7 @@
 import { AuthError } from "next-auth";
 
 import { signIn } from "@/auth";
+import { getSafeInvitationCallbackPath } from "@/lib/invitation-validation";
 import type { LoginActionState } from "@/types/login-action";
 
 export async function login(
@@ -14,6 +15,9 @@ export async function login(
     .toLowerCase();
 
   const password = String(formData.get("password") ?? "");
+  const redirectTo = getSafeInvitationCallbackPath(
+    formData.get("callbackUrl"),
+  );
 
   if (!email || !password) {
     return {
@@ -25,7 +29,7 @@ export async function login(
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/dashboard",
+      redirectTo,
     });
 
     return {

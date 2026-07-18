@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 
+import { vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
+
 import {
   generateInvitationToken,
   getInvitationExpirationDate,
   hashInvitationToken,
+  INVITATION_TTL_HOURS,
   isInvitationExpired,
   normalizeInvitationEmail,
 } from "@/lib/invitations";
@@ -28,6 +33,7 @@ describe("invitation tokens", () => {
 
     expect(invitation.token).not.toBe(invitation.tokenHash);
     expect(invitation.tokenHash).toHaveLength(64);
+    expect(invitation.token).toHaveLength(43);
   });
 });
 
@@ -38,11 +44,11 @@ describe("invitation normalization and expiration", () => {
     );
   });
 
-  it("sets expiration exactly 72 hours in the future", () => {
+  it("sets expiration from the shared invitation TTL", () => {
     const now = new Date("2026-07-15T12:00:00.000Z");
 
-    expect(getInvitationExpirationDate(now).toISOString()).toBe(
-      "2026-07-18T12:00:00.000Z",
+    expect(getInvitationExpirationDate(now).getTime() - now.getTime()).toBe(
+      INVITATION_TTL_HOURS * 60 * 60 * 1000,
     );
   });
 

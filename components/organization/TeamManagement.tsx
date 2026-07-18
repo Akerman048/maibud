@@ -69,7 +69,7 @@ const memberRoleOptions = [
   label: getUserRoleLabel(role as UserRole),
 }));
 const invitationRoleOptions = memberRoleOptions.filter(
-  (option) => option.value !== "HEAD",
+  (option) => option.value !== "HEAD" && option.value !== "CLIENT",
 );
 
 function ActionStateMessage({ state }: { state: OrganizationActionState }) {
@@ -129,11 +129,9 @@ function CopyInviteLink({ inviteUrl }: { inviteUrl: string }) {
 }
 
 function CreateInvitationModal({
-  organizationId,
   projects,
   onClose,
 }: {
-  organizationId: string;
   projects: ProjectOption[];
   onClose: () => void;
 }) {
@@ -149,7 +147,6 @@ function CreateInvitationModal({
       onClose={onClose}
     >
       <form action={formAction} className="flex flex-col gap-4">
-        <input type="hidden" name="organizationId" value={organizationId} />
         <div className="flex flex-col gap-2">
           <label htmlFor="invite-email" className="text-sm font-semibold">
             Email
@@ -356,10 +353,8 @@ function ProjectMembership({
 
 function InvitationActions({
   invitation,
-  organizationId,
 }: {
   invitation: PendingInvitation;
-  organizationId: string;
 }) {
   const [resendState, resendAction, resendPending] = useActionState(
     resendInvitation,
@@ -372,33 +367,39 @@ function InvitationActions({
 
   return (
     <div className="mt-4 border-t border-[var(--color-border)] pt-4">
-      <div className="flex flex-wrap gap-2">
-        <form action={resendAction}>
-          <input type="hidden" name="organizationId" value={organizationId} />
-          <input type="hidden" name="invitationId" value={invitation.id} />
-          <Button type="submit" variant="secondary" disabled={resendPending}>
-            <FiRefreshCw className="mr-2 size-4" />
-            Оновити посилання
-          </Button>
-        </form>
-        <form action={revokeAction}>
-          <input type="hidden" name="organizationId" value={organizationId} />
-          <input type="hidden" name="invitationId" value={invitation.id} />
-          <Button
-            type="submit"
-            variant="ghost"
-            disabled={revokePending}
-            className="text-red-700 hover:bg-red-50 hover:text-red-800"
-          >
-            Відкликати
-          </Button>
-        </form>
-      </div>
-      <ActionStateMessage
-        state={resendState.error ? resendState : revokeState}
-      />
-      {resendState.inviteUrl && (
-        <CopyInviteLink inviteUrl={resendState.inviteUrl} />
+      {invitation.status === "PENDING" ? (
+        <>
+          <div className="flex flex-wrap gap-2">
+            <form action={resendAction}>
+              <input type="hidden" name="invitationId" value={invitation.id} />
+              <Button type="submit" variant="secondary" disabled={resendPending}>
+                <FiRefreshCw className="mr-2 size-4" />
+                Оновити посилання
+              </Button>
+            </form>
+            <form action={revokeAction}>
+              <input type="hidden" name="invitationId" value={invitation.id} />
+              <Button
+                type="submit"
+                variant="ghost"
+                disabled={revokePending}
+                className="text-red-700 hover:bg-red-50 hover:text-red-800"
+              >
+                Відкликати
+              </Button>
+            </form>
+          </div>
+          <ActionStateMessage
+            state={resendState.error ? resendState : revokeState}
+          />
+          {resendState.inviteUrl && (
+            <CopyInviteLink inviteUrl={resendState.inviteUrl} />
+          )}
+        </>
+      ) : (
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Створіть нове запрошення для цього користувача.
+        </p>
       )}
     </div>
   );
@@ -540,7 +541,6 @@ export function TeamManagement({
               </div>
               <InvitationActions
                 invitation={invitation}
-                organizationId={organizationId}
               />
             </Card>
           ))}
@@ -550,7 +550,6 @@ export function TeamManagement({
 
       {inviteOpen && (
         <CreateInvitationModal
-          organizationId={organizationId}
           projects={projects}
           onClose={() => setInviteOpen(false)}
         />

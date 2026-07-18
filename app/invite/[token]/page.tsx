@@ -1,10 +1,14 @@
 import { auth } from "@/auth";
+import { headers } from "next/headers";
 import { AcceptInvitationForm } from "@/components/organization/AcceptInvitationForm";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { getInvitationByRawToken } from "@/lib/invitation-data";
+import { checkInvitationRateLimit } from "@/lib/invitation-rate-limit";
+import { getTrustedClientIp } from "@/lib/process-rate-limit";
 import { getUserRoleLabel } from "@/lib/user-role";
 import { BRAND_NAME } from "@/lib/brand";
+import { getInvitationCallbackPath } from "@/lib/invitation-validation";
 
 function InvitationMessage({
   title,
@@ -31,12 +35,29 @@ export default async function InvitationPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const [invitation, session] = await Promise.all([
-    getInvitationByRawToken(token),
-    auth(),
-  ]);
+  const clientIp = getTrustedClientIp(await headers());
+  const rateLimit = checkInvitationRateLimit("inspect", clientIp);
 
-  if (!invitation) {
+  if (!rateLimit.allowed) {
+    return (
+      <InvitationMessage
+        title="Забагато спроб"
+        description={`Спробуйте знову через ${rateLimit.retryAfterSeconds} секунд.`}
+      />
+    );
+  }
+
+  const session = await auth();
+  const invitation = await getInvitationByRawToken(
+    token,
+    session?.user?.email,
+  );
+  const callbackPath = getInvitationCallbackPath(token);
+  const loginHref = callbackPath
+    ? `/login?callbackUrl=${encodeURIComponent(callbackPath)}`
+    : "/login";
+
+  if (invitation.status === "invalid") {
     return (
       <InvitationMessage
         title="Недійсне запрошення"
@@ -45,7 +66,7 @@ export default async function InvitationPage({
     );
   }
 
-  if (invitation.status === "REVOKED") {
+  if (invitation.status === "revoked") {
     return (
       <InvitationMessage
         title="Запрошення відкликано"
@@ -54,7 +75,7 @@ export default async function InvitationPage({
     );
   }
 
-  if (invitation.status === "ACCEPTED") {
+  if (invitation.status === "accepted") {
     return (
       <InvitationMessage
         title="Запрошення вже прийнято"
@@ -63,7 +84,7 @@ export default async function InvitationPage({
     );
   }
 
-  if (invitation.status === "EXPIRED") {
+  if (invitation.status === "expired") {
     return (
       <InvitationMessage
         title="Термін запрошення минув"
@@ -111,7 +132,8 @@ export default async function InvitationPage({
         <AcceptInvitationForm
           token={token}
           email={invitation.email}
-          isAuthenticated={Boolean(session?.user)}
+          viewerStatus={invitation.viewerStatus}
+          loginHref={loginHref}
         />
       </Card>
     </main>

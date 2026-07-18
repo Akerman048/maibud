@@ -11,7 +11,7 @@ const initialState: LoginActionState = {
   error: "",
 };
 
-export function LoginForm() {
+export function LoginForm({ callbackUrl = "/dashboard" }: { callbackUrl?: string }) {
   const [state, formAction, isPending] = useActionState(
     login,
     initialState,
@@ -19,6 +19,7 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      <input type="hidden" name="callbackUrl" value={callbackUrl} />
       <div className="flex flex-col gap-2">
         <label htmlFor="email" className="text-sm font-semibold">
           Email
