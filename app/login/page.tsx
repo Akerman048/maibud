@@ -7,6 +7,7 @@ import { DemoCredentials } from "@/components/auth/DemoCredentials";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { getSafeInvitationCallbackPath } from "@/lib/invitation-validation";
 
 export default async function LoginPage({
   searchParams,
@@ -14,14 +15,15 @@ export default async function LoginPage({
   searchParams: Promise<{
     invitationAccepted?: string;
     registered?: string;
+    callbackUrl?: string;
   }>;
 }) {
   const session = await auth();
   const query = await searchParams;
 
-  if (session?.user) {
-    redirect("/dashboard");
-  }
+  const callbackUrl = getSafeInvitationCallbackPath(query.callbackUrl);
+
+  if (session?.user) redirect(callbackUrl);
 
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-[var(--color-background)] p-4 sm:p-5">
@@ -46,7 +48,7 @@ export default async function LoginPage({
           </p>
         </div>
 
-        <LoginForm />
+        <LoginForm callbackUrl={callbackUrl} />
 
         <div className="mt-4 flex flex-col gap-2 border-t border-[var(--color-border)] pt-4 text-center">
           <span className="text-sm text-[var(--color-text-secondary)]">
@@ -65,7 +67,7 @@ export default async function LoginPage({
 
         {query.invitationAccepted === "1" && (
           <p className="mt-4 rounded-md bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
-            Запрошення прийнято. Увійдіть із новими обліковими даними.
+            Запрошення прийнято. Увійдіть ще раз, щоб оновити роль доступу.
           </p>
         )}
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 
 import {
@@ -11,33 +12,33 @@ import {
 } from "@/app/generated/prisma/client";
 import { AuthorizationError } from "@/lib/auth-guard";
 import {
-  cancelPendingInvitationEmailJobs,
-  createInvitationEmailJob,
-} from "@/lib/email/email-jobs";
+  createOrganizationInvitation,
+  InvitationLifecycleError,
+  revokeOrganizationInvitation,
+  rotateOrganizationInvitation,
+} from "@/lib/invitation-service";
+import { checkInvitationRateLimit } from "@/lib/invitation-rate-limit";
 import {
-  generateInvitationToken,
-  getInvitationExpirationDate,
-  normalizeInvitationEmail,
-} from "@/lib/invitations";
+  createInvitationInputSchema,
+  invitationMutationSchema,
+} from "@/lib/invitation-validation";
 import {
   canChangeOrganizationRole,
   canRemoveOrganizationMember,
 } from "@/lib/membership-policy";
-import { requireHeadOfOrganization } from "@/lib/organization-access";
+import {
+  requireCurrentHeadOrganization,
+  requireHeadOfOrganization,
+} from "@/lib/organization-access";
 import { getNotificationHref } from "@/lib/notification-policy";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { getTrustedClientIp } from "@/lib/process-rate-limit";
 import type { OrganizationActionState } from "@/types/organization";
 
 class OrganizationActionError extends Error {}
 
 const idSchema = z.string().trim().min(1, "Не вказано ідентифікатор.");
-const invitationRoleSchema = z.enum([
-  UserRole.EXPERT,
-  UserRole.DESIGNER,
-  UserRole.ARCHIVIST,
-  UserRole.CLIENT,
-]);
 const memberRoleSchema = z.enum([
   UserRole.HEAD,
   UserRole.EXPERT,
@@ -45,20 +46,6 @@ const memberRoleSchema = z.enum([
   UserRole.ARCHIVIST,
   UserRole.CLIENT,
 ]);
-const createInvitationSchema = z.object({
-  organizationId: idSchema,
-  email: z
-    .string()
-    .trim()
-    .email("Вкажіть коректний email.")
-    .transform(normalizeInvitationEmail),
-  role: invitationRoleSchema,
-  projectId: z
-    .string()
-    .trim()
-    .optional()
-    .transform((value) => value || undefined),
-});
 
 function revalidateMembers() {
   revalidatePath("/dashboard/head/members");
@@ -66,6 +53,10 @@ function revalidateMembers() {
 
 function stateFromError(error: unknown): OrganizationActionState {
   if (error instanceof OrganizationActionError) {
+    return { error: error.message, success: false };
+  }
+
+  if (error instanceof InvitationLifecycleError) {
     return { error: error.message, success: false };
   }
 
@@ -107,208 +98,73 @@ function getParsedData<T>(result: z.ZodSafeParseResult<T>) {
   return result.data;
 }
 
+async function enforceInvitationRateLimit(
+  operation: "create" | "resend" | "revoke",
+) {
+  const clientIp = getTrustedClientIp(await headers());
+  const result = checkInvitationRateLimit(operation, clientIp);
+
+  if (!result.allowed) {
+    throw new OrganizationActionError(
+      `Забагато спроб. Повторіть через ${result.retryAfterSeconds} с.`,
+    );
+  }
+}
+
 export async function createInvitation(
   _previousState: OrganizationActionState,
   formData: FormData,
 ): Promise<OrganizationActionState> {
   try {
+    await enforceInvitationRateLimit("create");
     const input = getParsedData(
-      createInvitationSchema.safeParse({
-        organizationId: formData.get("organizationId"),
+      createInvitationInputSchema.safeParse({
         email: formData.get("email"),
         role: formData.get("role"),
         projectId: formData.get("projectId"),
       }),
     );
-    const { user } = await requireHeadOfOrganization(
-      input.organizationId,
-    );
-    const { token, tokenHash } = generateInvitationToken();
-    const now = new Date();
-    const expiresAt = getInvitationExpirationDate(now);
-    const inviteUrl = `/invite/${token}`;
-
-    await prisma.$transaction(
-      async (tx) => {
-        const organization = await tx.organization.findUnique({
-          where: { id: input.organizationId },
-          select: { name: true },
-        });
-
-        if (!organization) {
-          throw new OrganizationActionError("Організацію не знайдено.");
-        }
-
-        const project = input.projectId
-          ? await tx.project.findFirst({
-              where: {
-                id: input.projectId,
-                organizationId: input.organizationId,
-                status: { not: ProjectStatus.ARCHIVED },
-              },
-              select: { id: true, name: true },
-            })
-          : null;
-
-        if (input.projectId && !project) {
-          throw new OrganizationActionError(
-            "Проєкт не знайдено в цій організації.",
-          );
-        }
-
-        const activeMember = await tx.organizationMember.findFirst({
-          where: {
-            organizationId: input.organizationId,
-            removedAt: null,
-            user: {
-              email: {
-                equals: input.email,
-                mode: "insensitive",
-              },
-            },
-          },
-          select: { id: true },
-        });
-
-        if (activeMember) {
-          throw new OrganizationActionError(
-            "Користувач уже є активним учасником організації.",
-          );
-        }
-
-        const duplicateInvitation = await tx.invitation.findFirst({
-          where: {
-            organizationId: input.organizationId,
-            email: input.email,
-            projectId: input.projectId ?? null,
-            status: "PENDING",
-            expiresAt: { gt: now },
-          },
-          select: { id: true },
-        });
-
-        if (duplicateInvitation) {
-          throw new OrganizationActionError(
-            "Активне запрошення для цього email уже існує.",
-          );
-        }
-
-        const invitation = await tx.invitation.create({
-          data: {
-            email: input.email,
-            role: input.role,
-            tokenHash,
-            organizationId: input.organizationId,
-            projectId: input.projectId,
-            invitedById: user.id,
-            expiresAt,
-          },
-        });
-
-        await tx.auditLog.create({
-          data: {
-            action: "Створено запрошення користувача",
-            entityType: "INVITATION",
-            entityId: invitation.id,
-            userId: user.id,
-            projectId: input.projectId,
-          },
-        });
-
-        await createInvitationEmailJob(tx, {
-          invitationId: invitation.id,
-          recipientEmail: input.email,
-          organizationName: organization.name,
-          role: input.role,
-          projectName: project?.name,
-          expiresAt,
-          href: inviteUrl,
-        });
+    const current = await requireCurrentHeadOrganization();
+    const result = await createOrganizationInvitation({
+      context: {
+        actorId: current.user.id,
+        actorEmail: current.actorEmail,
+        organizationId: current.organization.id,
       },
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      },
-    );
+      ...input,
+    });
 
     revalidateMembers();
 
     return {
       error: "",
       success: true,
-      inviteUrl,
+      inviteUrl: result.inviteUrl,
     };
   } catch (error) {
     return stateFromError(error);
   }
 }
 
-const invitationMutationSchema = z.object({
-  organizationId: idSchema,
-  invitationId: idSchema,
-});
-
 export async function revokeInvitation(
   _previousState: OrganizationActionState,
   formData: FormData,
 ): Promise<OrganizationActionState> {
   try {
+    await enforceInvitationRateLimit("revoke");
     const input = getParsedData(
       invitationMutationSchema.safeParse({
-        organizationId: formData.get("organizationId"),
         invitationId: formData.get("invitationId"),
       }),
     );
-    const { user } = await requireHeadOfOrganization(
-      input.organizationId,
-    );
-
-    await prisma.$transaction(async (tx) => {
-      const invitation = await tx.invitation.findFirst({
-        where: {
-          id: input.invitationId,
-          organizationId: input.organizationId,
-          status: "PENDING",
-        },
-        select: {
-          projectId: true,
-        },
-      });
-
-      if (!invitation) {
-        throw new OrganizationActionError(
-          "Запрошення вже використано, відкликано або не існує.",
-        );
-      }
-
-      const result = await tx.invitation.updateMany({
-        where: {
-          id: input.invitationId,
-          organizationId: input.organizationId,
-          status: "PENDING",
-        },
-        data: {
-          status: "REVOKED",
-          revokedAt: new Date(),
-        },
-      });
-
-      if (result.count !== 1) {
-        throw new OrganizationActionError(
-          "Запрошення вже використано, відкликано або не існує.",
-        );
-      }
-
-      await tx.auditLog.create({
-        data: {
-          action: "Запрошення відкликано",
-          entityType: "INVITATION",
-          entityId: input.invitationId,
-          userId: user.id,
-          projectId: invitation.projectId,
-        },
-      });
-
-      await cancelPendingInvitationEmailJobs(tx, input.invitationId);
+    const current = await requireCurrentHeadOrganization();
+    await revokeOrganizationInvitation({
+      context: {
+        actorId: current.user.id,
+        actorEmail: current.actorEmail,
+        organizationId: current.organization.id,
+      },
+      invitationId: input.invitationId,
     });
 
     revalidateMembers();
@@ -323,99 +179,27 @@ export async function resendInvitation(
   formData: FormData,
 ): Promise<OrganizationActionState> {
   try {
+    await enforceInvitationRateLimit("resend");
     const input = getParsedData(
       invitationMutationSchema.safeParse({
-        organizationId: formData.get("organizationId"),
         invitationId: formData.get("invitationId"),
       }),
     );
-    const { user } = await requireHeadOfOrganization(
-      input.organizationId,
-    );
-    const { token, tokenHash } = generateInvitationToken();
-    const expiresAt = getInvitationExpirationDate();
-    const inviteUrl = `/invite/${token}`;
-
-    await prisma.$transaction(async (tx) => {
-      const invitation = await tx.invitation.findFirst({
-        where: {
-          id: input.invitationId,
-          organizationId: input.organizationId,
-        },
-        select: {
-          email: true,
-          role: true,
-          status: true,
-          projectId: true,
-          updatedAt: true,
-          organization: { select: { name: true } },
-          project: { select: { name: true } },
-        },
-      });
-
-      if (
-        !invitation ||
-        !["PENDING", "EXPIRED"].includes(invitation.status)
-      ) {
-        throw new OrganizationActionError(
-          "Оновити можна лише pending або expired запрошення.",
-        );
-      }
-
-      if (Date.now() - invitation.updatedAt.getTime() < 60_000) {
-        throw new OrganizationActionError(
-          "Повторне надсилання доступне через 60 секунд.",
-        );
-      }
-
-      await cancelPendingInvitationEmailJobs(tx, input.invitationId);
-
-      const result = await tx.invitation.updateMany({
-        where: {
-          id: input.invitationId,
-          organizationId: input.organizationId,
-          status: { in: ["PENDING", "EXPIRED"] },
-        },
-        data: {
-          tokenHash,
-          status: "PENDING",
-          expiresAt,
-          revokedAt: null,
-        },
-      });
-
-      if (result.count !== 1) {
-        throw new OrganizationActionError(
-          "Запрошення вже змінилося. Оновіть сторінку.",
-        );
-      }
-
-      await tx.auditLog.create({
-        data: {
-          action: "Запрошення оновлено",
-          entityType: "INVITATION",
-          entityId: input.invitationId,
-          userId: user.id,
-          projectId: invitation.projectId,
-        },
-      });
-
-      await createInvitationEmailJob(tx, {
-        invitationId: input.invitationId,
-        recipientEmail: invitation.email,
-        organizationName: invitation.organization.name,
-        role: invitation.role,
-        projectName: invitation.project?.name,
-        expiresAt,
-        href: inviteUrl,
-      });
+    const current = await requireCurrentHeadOrganization();
+    const result = await rotateOrganizationInvitation({
+      context: {
+        actorId: current.user.id,
+        actorEmail: current.actorEmail,
+        organizationId: current.organization.id,
+      },
+      invitationId: input.invitationId,
     });
 
     revalidateMembers();
     return {
       error: "",
       success: true,
-      inviteUrl,
+      inviteUrl: result.inviteUrl,
     };
   } catch (error) {
     return stateFromError(error);
@@ -814,6 +598,22 @@ export async function updateOrganizationMemberRole(
             policy.reason === "SAME_ROLE"
               ? "Оберіть іншу роль."
               : "Не можна понизити останнього HEAD організації.",
+          );
+        }
+
+        const conflictingActiveMembership =
+          await tx.organizationMember.findFirst({
+            where: {
+              userId: target.userId,
+              organizationId: { not: input.organizationId },
+              removedAt: null,
+              role: { not: input.role },
+            },
+            select: { id: true },
+          });
+        if (conflictingActiveMembership) {
+          throw new OrganizationActionError(
+            "Роль конфліктує з активним членством в іншій організації.",
           );
         }
 

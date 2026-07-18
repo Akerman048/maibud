@@ -1,6 +1,8 @@
+import "server-only";
+
 import { createHash, randomBytes } from "node:crypto";
 
-const INVITATION_TTL_HOURS = 72;
+export const INVITATION_TTL_HOURS = 72;
 
 export function hashInvitationToken(token: string) {
   return createHash("sha256").update(token).digest("hex");

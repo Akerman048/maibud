@@ -62,7 +62,7 @@ Deployment and incident procedures, including rollback, log fields and the rate-
 
 ## Organization invitations
 
-HEAD creates an invitation and assigns its organization role; invitees cannot choose a role themselves. Invitation links contain a one-time raw token, while the `Invitation` row stores only its SHA-256 hash. The raw link is queued in a short-lived email job during create/resend, and the generated URL is still shown to HEAD as a manual-delivery fallback.
+HEAD creates an invitation and assigns its organization role; invitees cannot choose a role themselves. Invitation links contain a one-time raw token, while the `Invitation` row stores only its SHA-256 hash. The raw link is queued through the existing short-lived invitation email job during create/resend, and the generated URL is still shown to HEAD as a manual-delivery fallback.
 
 After deploying the organization-membership migration, backfill existing project members without deleting or changing existing data:
 
@@ -117,7 +117,7 @@ Trigger a bounded worker batch with `POST /api/internal/email-jobs/process` and 
 pnpm exec tsx scripts/process-email-jobs.ts
 ```
 
-The worker is never started by migrations, seed, build, or CI. Resend is initialized lazily only while processing jobs. Users control global, document, comment, and membership email categories from their role-specific settings page. Unsupported/noisy events such as document unpublish remain internal-only. Invitation resend has a 60-second cooldown, invalidates the previous token, and cancels its unsent email job. Successfully sent and terminally failed jobs replace payload data with sanitized metadata so one-time invitation links are not retained.
+The worker is never started by migrations, seed, build, or CI. Resend is initialized lazily only while processing jobs. Users control global, document, comment, and membership email categories from their role-specific settings page. Unsupported/noisy events such as document unpublish remain internal-only. Invitation link rotation has a 60-second cooldown, invalidates the previous token, and cancels any older pending invitation email job. Successfully sent and terminally failed jobs replace payload data with sanitized metadata so one-time invitation links are not retained.
 
 The optional HEAD email-job observability page is intentionally deferred; inspect operational metrics through database tooling without exposing payloads or invitation URLs in the application UI.
 

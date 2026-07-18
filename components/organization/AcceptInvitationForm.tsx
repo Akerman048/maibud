@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 
 import { acceptInvitation } from "@/app/invite/[token]/actions";
 import { Button } from "@/components/ui/Button";
@@ -15,16 +16,23 @@ const initialState: AcceptInvitationState = {
 export function AcceptInvitationForm({
   token,
   email,
-  isAuthenticated,
+  viewerStatus,
+  loginHref,
 }: {
   token: string;
   email: string;
-  isAuthenticated: boolean;
+  viewerStatus:
+    | "authenticated-matching"
+    | "authenticated-wrong"
+    | "unauthenticated-existing"
+    | "unauthenticated-new";
+  loginHref: string;
 }) {
   const [state, formAction, isPending] = useActionState(
     acceptInvitation,
     initialState,
   );
+  const canAccept = viewerStatus === "authenticated-matching";
 
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4">
@@ -43,64 +51,31 @@ export function AcceptInvitationForm({
         />
       </div>
 
-      {!isAuthenticated && (
-        <>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="name" className="text-sm font-semibold">
-              Ім’я
-            </label>
-            <Input
-              id="name"
-              name="name"
-              minLength={2}
-              maxLength={100}
-              autoComplete="name"
-              required
-              disabled={isPending}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label htmlFor="password" className="text-sm font-semibold">
-              Пароль
-            </label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              minLength={10}
-              maxLength={128}
-              autoComplete="new-password"
-              required
-              disabled={isPending}
-            />
-            <p className="text-xs text-[var(--color-text-secondary)]">
-              Щонайменше 10 символів, велика і мала літери та цифра.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="confirmPassword"
-              className="text-sm font-semibold"
-            >
-              Підтвердження пароля
-            </label>
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              minLength={10}
-              maxLength={128}
-              autoComplete="new-password"
-              required
-              disabled={isPending}
-            />
-          </div>
-        </>
+      {viewerStatus === "unauthenticated-existing" && (
+        <div className="rounded-md bg-blue-50 px-3 py-3 text-sm text-blue-800">
+          <p>Щоб прийняти запрошення, увійдіть у відповідний обліковий запис.</p>
+          <Button asChild variant="secondary" className="mt-3">
+            <Link href={loginHref}>Увійти</Link>
+          </Button>
+        </div>
       )}
 
-      {isAuthenticated && (
+      {viewerStatus === "unauthenticated-new" && (
+        <p className="rounded-md bg-amber-50 px-3 py-3 text-sm text-amber-800">
+          Для цього email ще немає активного облікового запису. Безпечна
+          реєстрація за запрошенням поки не підключена — зверніться до керівника
+          організації.
+        </p>
+      )}
+
+      {viewerStatus === "authenticated-wrong" && (
+        <p className="rounded-md bg-red-50 px-3 py-3 text-sm text-red-700">
+          Ви увійшли з іншим email. Вийдіть із системи, увійдіть у запрошений
+          обліковий запис і знову відкрийте це посилання.
+        </p>
+      )}
+
+      {canAccept && (
         <p className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800">
           Запрошення буде прийнято поточним обліковим записом. Його email має
           збігатися із запрошенням.
@@ -116,9 +91,11 @@ export function AcceptInvitationForm({
         </p>
       )}
 
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Прийняття..." : "Прийняти запрошення"}
-      </Button>
+      {canAccept && (
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Прийняття..." : "Прийняти запрошення"}
+        </Button>
+      )}
     </form>
   );
 }
